@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <TextView
+            android:id="@+id/titleView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_centerHorizontal="true"
+            android:background="@color/colorPrimary"
+            android:paddingBottom="@dimen/title_vertical_padding"
+            android:paddingLeft="@dimen/activity_horizontal_margin"
+            android:paddingTop="@dimen/title_vertical_padding"
+            android:textColor="@android:color/white"
+            android:textSize="@dimen/title_text_size"
+            tools:text="San Andreas"
+            android:elevation="@dimen/title_elevation"
+            android:shadowColor="@android:color/black" />
+
+        <ImageView
+            android:id="@+id/posterView"
+            android:layout_width="@dimen/detail_image_width"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_below="@+id/titleView"
+            android:layout_marginLeft="@dimen/activity_horizontal_margin"
+            android:layout_marginTop="@dimen/detail_image_top_margin"
+            android:adjustViewBounds="true"/>
+
+        <TextView
+        android:id="@+id/releaseDateView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/titleView"
+        android:layout_marginLeft="@dimen/left_margin"
+        android:layout_marginTop="@dimen/activity_vertical_margin"
+        android:layout_toRightOf="@id/posterView"
+        android:textSize="@dimen/release_date_text_size"
+        tools:text="Release Date" />
+
+        <TextView
+            android:id="@+id/runtimeView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/releaseDateView"
+            android:layout_marginLeft="@dimen/left_margin"
+            android:layout_marginTop="@dimen/ave_vote_top_margin"
+            android:layout_toRightOf="@id/posterView"
+            android:textSize="@dimen/release_date_text_size"
+            tools:text="120min" />
+
+        <TextView
+            android:id="@+id/averageVoteView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/runtimeView"
+            android:layout_marginLeft="@dimen/left_margin"
+            android:layout_marginTop="@dimen/ave_vote_top_margin"
+            android:layout_toRightOf="@id/posterView"
+            android:textSize="@dimen/detail_text_size"
+            tools:text="Release Date" />
+
+        <Button
+            android:id="@+id/addToFavoritesButton"
+            android:text="@string/mark_as_favorite"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/averageVoteView"
+            android:layout_marginLeft="@dimen/left_margin"
+            android:layout_marginTop="@dimen/ave_vote_top_margin"
+            android:layout_toRightOf="@id/posterView"
+            android:textSize="@dimen/detail_text_size"
+            tools:text="Add to favorites" />
+
+        <TextView
+            android:id="@+id/summaryView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/posterView"
+            android:layout_centerHorizontal="true"
+            android:layout_marginTop="@dimen/activity_vertical_margin"
+            android:paddingLeft="@dimen/activity_horizontal_margin"
+            android:paddingRight="@dimen/activity_horizontal_margin"
+            android:textSize="@dimen/detail_text_size"
+            tools:text="Movie summary" />
+        <LinearLayout
+            android:id="@+id/review_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/summaryView"
+            android:orientation="vertical">
+        </LinearLayout>
+    </RelativeLayout>
+</ScrollView>
