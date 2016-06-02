@@ -18,7 +18,6 @@ public class MovieContract {
     public static final String ACCOUNT = "movieaccount";
 
     public static final String PATH_MOVIE = "movie";
-    public static final String PATH_MOVIE_TYPE = "type";
     public static final String PATH_REVIEW = "review";
     public static final String PATH_TRAILER = "trailer";
     public static final String PATH_STATE = "state";

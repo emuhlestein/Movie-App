@@ -93,7 +93,7 @@ public class MovieAdapter extends RecyclerView.Adapter<MovieAdapter.MovieHolder>
         @Override
         public void onClick(View v) {
             if(mListener != null) {
-                mListener.onSelectMovie(mMovie);
+                mListener.onSelectMovie("");
             }
         }
     }

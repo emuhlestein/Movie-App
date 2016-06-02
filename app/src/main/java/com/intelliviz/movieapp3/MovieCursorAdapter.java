@@ -104,7 +104,7 @@ public class MovieCursorAdapter extends RecyclerView.Adapter<MovieCursorAdapter.
         @Override
         public void onClick(View v) {
             if(mListener != null) {
-                mListener.onSelectFavoriteMovie(mMovieId);
+                mListener.onSelectMovie(mMovieId);
             }
         }
     }

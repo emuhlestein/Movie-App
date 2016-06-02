@@ -8,22 +8,15 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 
-import com.intelliviz.movieapp3.ApiKeyMgr;
-import com.intelliviz.movieapp3.Movie;
 import com.intelliviz.movieapp3.R;
 import com.intelliviz.movieapp3.Review;
 import com.intelliviz.movieapp3.Trailer;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class MovieDetailsActivity extends AppCompatActivity implements
         MovieDetailsFragment.OnSelectReviewListener {
     private static final String LIST_FRAG_TAG = "list frag tag";
     public static final String MOVIE_EXTRA = "movie";
-    public static final String FAVORITE_EXTRA = ApiKeyMgr.DEFAULT_SORT;
-    public static final String REVIEWS_EXTRA = "reviews";
-    public static final String REFRESH_LIST_EXTRA = "refresh";
+    public static final String EXTRA_REFRESH_LIST = "refresh";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,7 +25,6 @@ public class MovieDetailsActivity extends AppCompatActivity implements
 
         Intent intent = getIntent();
         String movieId = intent.getStringExtra(MOVIE_EXTRA);
-        ArrayList<Review> reviews = intent.getParcelableArrayListExtra(REVIEWS_EXTRA);
 
         FragmentManager fm = getSupportFragmentManager();
         Fragment fragment = fm.findFragmentByTag(LIST_FRAG_TAG);
@@ -63,16 +55,9 @@ public class MovieDetailsActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onMarkMovieAsFavorite(Movie movie, List<Review> reviews) {
-       // send message to main activity
-
-    }
-
-    @Override
-    public void onUnmarkMovieAsFavorite(Movie movie) {
-        // send message to main activity
-        Intent data = new Intent();
-        data.putExtra(REFRESH_LIST_EXTRA, 1);
-        setResult(0, data);
+    public void onUpdateMovieList() {
+        Intent intent = new Intent();
+        intent.putExtra(EXTRA_REFRESH_LIST, true);
+        this.setResult(RESULT_OK, intent);
     }
 }

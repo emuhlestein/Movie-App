@@ -89,17 +89,9 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
         void onSelectTrailer(Trailer trailer);
 
         /**
-         * Mark a movie as favorite.
-         * @param movie The movie to mark.
-         * @param mReviews The associated reviews.
+         *
          */
-        void onMarkMovieAsFavorite(Movie movie, List<Review> mReviews);
-
-        /**
-         * Un mark a movie as a favorite.
-         * @param movie The movie to unmark.
-         */
-        void onUnmarkMovieAsFavorite(Movie movie);
+        void onUpdateMovieList();
     }
 
     /**
@@ -159,7 +151,7 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.details_fragment_menu, menu);
         // Locate MenuItem with ShareActionProvider
-        MenuItem item = (MenuItem) menu.findItem(R.id.menu_item_share);
+        MenuItem item = menu.findItem(R.id.menu_item_share);
 
         // Fetch and store ShareActionProvider
         mShareActionProvider = (ShareActionProvider) MenuItemCompat.getActionProvider(item);
@@ -232,17 +224,18 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
         updateUI(0);
     }
 
-    public void updateSort(boolean isFavorite) {
-        clearSelectedMovie();
-        updateUI(0);
-    }
-
     public void onMarkMovieAsFavoriteClick(View view) {
         new MarkFavoriteMovieTask(mMovieId, 1).execute();
+        if(mListener != null) {
+            mListener.onUpdateMovieList();
+        }
     }
 
     public void onUnmarkMovieAsFavoriteClick(View view) {
         new MarkFavoriteMovieTask(mMovieId, 0).execute();
+        if(mListener != null) {
+            mListener.onUpdateMovieList();
+        }
     }
 
     private void updateUI(int favorite) {

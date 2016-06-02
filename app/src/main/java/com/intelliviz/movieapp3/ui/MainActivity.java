@@ -25,7 +25,6 @@ import com.intelliviz.movieapp3.Trailer;
 import com.intelliviz.movieapp3.db.MovieContract;
 
 import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Main activity for movie app
@@ -127,6 +126,7 @@ public class MainActivity extends AppCompatActivity implements
         super.onSaveInstanceState(outState);
     }
 
+    /*
     @Override
     public void onSelectMovie(Movie movie) {
 
@@ -143,11 +143,10 @@ public class MainActivity extends AppCompatActivity implements
             startActivityForResult(intent, DETAILS_ACTIVITY);
         }
     }
+    */
 
     @Override
-    public void onSelectFavoriteMovie(String movieId) {
-
-        //ArrayList<Review> reviews = getReviews(movie);
+    public void onSelectMovie(String movieId) {
         if (mIsTablet) {
             FragmentManager fm = getSupportFragmentManager();
             MovieDetailsFragment fragment = (MovieDetailsFragment) fm.findFragmentByTag(DETAIL_FRAG_TAG);
@@ -156,22 +155,8 @@ public class MainActivity extends AppCompatActivity implements
             }
         } else {
             Intent intent = new Intent(this, MovieDetailsActivity.class);
-
             intent.putExtra(MovieDetailsActivity.MOVIE_EXTRA, movieId);
-            //intent.putParcelableArrayListExtra(MovieDetailsActivity.REVIEWS_EXTRA, reviews);
-            //intent.putExtra(MovieDetailsActivity.FAVORITE_EXTRA, true);
             startActivityForResult(intent, DETAILS_ACTIVITY);
-        }
-    }
-
-    @Override
-    public void onChangeSort(String sortBy) {
-        if (mIsTablet) {
-            FragmentManager fm = getSupportFragmentManager();
-            MovieDetailsFragment fragment = (MovieDetailsFragment) fm.findFragmentByTag(DETAIL_FRAG_TAG);
-            if (fragment != null) {
-                fragment.updateSort(ApiKeyMgr.DEFAULT_SORT.equals(sortBy));
-            }
         }
     }
 
@@ -193,19 +178,22 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onMarkMovieAsFavorite(Movie movie, List<Review> reviews) {
-    }
-
-    @Override
-    public void onUnmarkMovieAsFavorite(Movie movie) {
+    public void onUpdateMovieList() {
+        FragmentManager fm = getSupportFragmentManager();
+        Fragment fragment;
+        FragmentTransaction ft = fm.beginTransaction();
+        fragment = fm.findFragmentByTag(LIST_FRAG_TAG);
+        if (fragment != null && fragment instanceof MovieListFragment ) {
+            ((MovieListFragment)fragment).refreshList();
+        }
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == DETAILS_ACTIVITY) {
             if (data != null) {
-                int refresh = data.getIntExtra(MovieDetailsActivity.REFRESH_LIST_EXTRA, 0);
-                if(refresh != 0) {
+                boolean refresh = data.getBooleanExtra(MovieDetailsActivity.EXTRA_REFRESH_LIST, false);
+                if(refresh) {
                     MovieListFragment movieListFragment = ((MovieListFragment) getSupportFragmentManager()
                             .findFragmentByTag(LIST_FRAG_TAG));
                     if (movieListFragment != null) {

@@ -30,7 +30,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.intelliviz.movieapp3.ApiKeyMgr;
-import com.intelliviz.movieapp3.Movie;
 import com.intelliviz.movieapp3.MovieAdapter;
 import com.intelliviz.movieapp3.MovieBox;
 import com.intelliviz.movieapp3.MovieCursorAdapter;
@@ -39,8 +38,6 @@ import com.intelliviz.movieapp3.MovieUtils;
 import com.intelliviz.movieapp3.R;
 import com.intelliviz.movieapp3.db.MovieContract;
 import com.intelliviz.movieapp3.syncadapter.MovieSyncAdapter;
-
-import java.util.ArrayList;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
@@ -51,8 +48,7 @@ import butterknife.ButterKnife;
 public class MovieListFragment extends Fragment implements
         SharedPreferences.OnSharedPreferenceChangeListener,
         LoaderManager.LoaderCallbacks<Cursor> {
-    private static final String PREF_RESTART_LOADER = "restartloader";
-    private static final String SORT_BY = "sort by";
+    private static final String PREF_SORT_BY = "sort_by";
     private static final String TAG = MovieListFragment.class.getSimpleName();
     private static final String DEFAULT_SORT_BY_OPTION = "popular";
     private static final String MOVIE_LIST_KEY = "movie_list_key";
@@ -75,23 +71,10 @@ public class MovieListFragment extends Fragment implements
     public interface OnSelectMovieListener {
 
         /**
-         * Callback for when a movie is selected from the general list.
-         * @param movie The selected movie.
-         */
-        void onSelectMovie(Movie movie);
-
-        /**
-         * Callback for when a movie is selected from the favorite list.
+         * Callback for when a movie is selected..
          * @param movieId The id of the selected movie.
          */
-        void onSelectFavoriteMovie(String movieId);
-
-        /**
-         * Callback for when sorting method changes.
-         *
-         * @param sortBy The sorting method.
-         */
-        void onChangeSort(String sortBy);
+        void onSelectMovie(String movieId);
     }
 
     public MovieListFragment() {
@@ -117,16 +100,6 @@ public class MovieListFragment extends Fragment implements
         ButterKnife.bind(this, view);
 
         int spanCount = mSpanCount;
-        GridLayoutManager gridLayoutManager = new GridLayoutManager(getActivity(), spanCount);
-
-        if(savedInstanceState == null) {
-            //loadMovies();
-        } else {
-            ArrayList<Movie> movies = savedInstanceState.getParcelableArrayList(MOVIE_LIST_KEY);
-            if(movies != null) {
-                MovieBox.get().addMovies(movies);
-            }
-        }
 
         mMovieCursorAdapter = new MovieCursorAdapter(getActivity());
         mRecyclerView.setLayoutManager(new GridLayoutManager(getActivity(), spanCount));
@@ -140,7 +113,6 @@ public class MovieListFragment extends Fragment implements
         mSortBy = sp.getString(sort_key, DEFAULT_SORT_BY_OPTION);
 
         mProgressBar.setVisibility(View.INVISIBLE);
-        //initLoader(mSortBy);
 
         getLoaderManager().initLoader(STATUS_LOADER, null, this);
 
@@ -159,10 +131,6 @@ public class MovieListFragment extends Fragment implements
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        if(savedInstanceState != null) {
-            mRestartLoader = savedInstanceState.getBoolean(PREF_RESTART_LOADER, false);
-        }
 
         // causes onCreateOptionMenu to get called
         setHasOptionsMenu(true);
@@ -204,26 +172,23 @@ public class MovieListFragment extends Fragment implements
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+        if (mRestartLoader) {
+            restartLoader(mSortBy);
+            mRestartLoader = false;
+        }
+    }
+
+    @Override
     public void onDestroyView() {
         super.onDestroyView();
-        if(getActivity() == null) {
-            Log.d(TAG, "MovieListFragment activity is null");
-        }
-
-        if(isAdded()) {
-            Log.d(TAG, "MovieListFragment isAdded is true");
-        } else {
-            Log.d(TAG, "MovieListFragment isAdded is false");
-        }
-        Log.d(TAG, "MovieListFragment onDestroyView");
     }
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putParcelableArrayList(MOVIE_LIST_KEY, MovieBox.get().getMovies());
-        outState.putBoolean(PREF_RESTART_LOADER, mRestartLoader);
-
     }
 
     @Override
@@ -234,32 +199,27 @@ public class MovieListFragment extends Fragment implements
     /**
      * This method is called when the settings fragment is in the foreground. That means
      * this fragment is in the background and dettached from the activity.
-     * @param sharedPreferences
-     * @param key
+     * @param sharedPreferences The shared preference.
+     * @param key The shared preference key.
      */
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        String sortby = sharedPreferences.getString(key, DEFAULT_SORT_BY_OPTION);
-        if(!sortby.equals(mSortBy)) {
+        if(key.equals(PREF_SORT_BY)) {
             mRestartLoader = true;
-        }
-
-        if(mListener != null) {
-            mListener.onChangeSort(mSortBy);
         }
     }
 
     @Override
     public Loader<Cursor> onCreateLoader(int loaderId, Bundle args) {
-        Loader<Cursor> loader = null;
-        Uri uri = null;
+        Loader<Cursor> loader;
+        Uri uri;
         String selection;
 
         if(loaderId == STATUS_LOADER) {
             uri = MovieContract.StateEntry.CONTENT_URI;
             loader = new CursorLoader(getActivity(), uri, null, null, null, null);
         } else {
-            int sortBy = args.getInt(SORT_BY);
+            int sortBy = args.getInt(PREF_SORT_BY);
 
             switch (sortBy) {
                 case MovieContract.TYPE_TOP_RATED:
@@ -318,7 +278,6 @@ public class MovieListFragment extends Fragment implements
                     } else {
                         mProgressBar.setVisibility(View.INVISIBLE);
                     }
-                    Log.d(TAG, "Sync status: " + status);
                 }
             }
         } else {
@@ -340,15 +299,7 @@ public class MovieListFragment extends Fragment implements
     }
 
     public void refreshList() {
-        restartLoader(mSortBy);
-    }
-
-    private void updateDisplay() {
-        if(mPopularAdapter.getItemCount() > 0) {
-            mEmptyView.setVisibility(View.GONE);
-            mRecyclerView.setVisibility(View.VISIBLE);
-        }
-        mPopularAdapter.notifyDataSetChanged();
+        mRestartLoader = true;
     }
 
     public static boolean isNetworkAvailable(AppCompatActivity activity) {
@@ -357,7 +308,6 @@ public class MovieListFragment extends Fragment implements
             ConnectivityManager manager =
                     (ConnectivityManager) activity.getSystemService(Context.CONNECTIVITY_SERVICE);
             NetworkInfo networkInfo = manager.getActiveNetworkInfo();
-
 
             if (networkInfo != null && networkInfo.isConnected()) {
                 isAvailable = true;
@@ -381,29 +331,36 @@ public class MovieListFragment extends Fragment implements
 
     private void restartLoader(String sortBy) {
         Bundle bundle = new Bundle();
-        if(sortBy.equals("favorite")) {
-            bundle.putInt(SORT_BY, MovieContract.TYPE_FAVORITE);
-        } else if(sortBy.equals("popular")) {
-            bundle.putInt(SORT_BY, MovieContract.TYPE_POPULAR);
-        } else {
-            bundle.putInt(SORT_BY, MovieContract.TYPE_TOP_RATED);
+        switch (sortBy) {
+            case "favorite":
+                bundle.putInt(PREF_SORT_BY, MovieContract.TYPE_FAVORITE);
+                break;
+            case "popular":
+                bundle.putInt(PREF_SORT_BY, MovieContract.TYPE_POPULAR);
+                break;
+            default:
+                bundle.putInt(PREF_SORT_BY, MovieContract.TYPE_TOP_RATED);
+                break;
         }
-        Loader loader = getLoaderManager().getLoader(MOVIE_LOADER);
         getLoaderManager().destroyLoader(MOVIE_LOADER);
         getLoaderManager().initLoader(MOVIE_LOADER, bundle, this);
     }
 
     private void initLoader(String sortBy) {
         Bundle bundle = new Bundle();
-        if(sortBy.equals("favorite")) {
-            bundle.putInt(SORT_BY, MovieContract.TYPE_FAVORITE);
-            getLoaderManager().initLoader(MOVIE_LOADER, bundle, this);
-        } else if(sortBy.equals("popular")) {
-            bundle.putInt(SORT_BY, MovieContract.TYPE_POPULAR);
-            getLoaderManager().initLoader(MOVIE_LOADER, bundle, this);
-        } else {
-            bundle.putInt(SORT_BY, MovieContract.TYPE_TOP_RATED);
-            getLoaderManager().initLoader(MOVIE_LOADER, bundle, this);
+        switch (sortBy) {
+            case "favorite":
+                bundle.putInt(PREF_SORT_BY, MovieContract.TYPE_FAVORITE);
+                getLoaderManager().initLoader(MOVIE_LOADER, bundle, this);
+                break;
+            case "popular":
+                bundle.putInt(PREF_SORT_BY, MovieContract.TYPE_POPULAR);
+                getLoaderManager().initLoader(MOVIE_LOADER, bundle, this);
+                break;
+            default:
+                bundle.putInt(PREF_SORT_BY, MovieContract.TYPE_TOP_RATED);
+                getLoaderManager().initLoader(MOVIE_LOADER, bundle, this);
+                break;
         }
     }
 
@@ -422,9 +379,8 @@ public class MovieListFragment extends Fragment implements
                     bundle.putInt(MovieSyncAdapter.EXTRA_PAGE, state.getPage());
                     bundle.putString(MovieSyncAdapter.EXTRA_SORTBY, sortBy);
                     bundle.putBoolean(ContentResolver.SYNC_EXTRAS_EXPEDITED, true);
-                    bundle.putBoolean(ContentResolver.SYNC_EXTRAS_FORCE, true);
                     bundle.putBoolean(ContentResolver.SYNC_EXTRAS_MANUAL, true);
-                    getContext().getContentResolver().requestSync(account, MovieContract.CONTENT_AUTHORITY, bundle);
+                    ContentResolver.requestSync(account, MovieContract.CONTENT_AUTHORITY, bundle);
                 } else {
                     Toast.makeText(getContext(), "Error downloading movies", Toast.LENGTH_SHORT).show();
                 }
