@@ -39,6 +39,10 @@ public class MovieCursorAdapter extends RecyclerView.Adapter<MovieCursorAdapter.
 
         int posterIndex = mCursor.getColumnIndex(MovieContract.MovieEntry.COLUMN_POSTER);
         int movieIdIndex = mCursor.getColumnIndex(MovieContract.MovieEntry.COLUMN_MOVIE_ID);
+
+        if(movieIdIndex == -1 || posterIndex == -1) {
+            return;
+        }
         String movieId = mCursor.getString(movieIdIndex);
         String poster = mCursor.getString(posterIndex);
 

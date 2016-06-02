@@ -47,30 +47,32 @@ public class MovieSyncAdapter extends AbstractThreadedSyncAdapter {
 
     @Override
     public void onPerformSync(Account account, Bundle extras, String authority, ContentProviderClient provider, SyncResult syncResult) {
-        String sortBy = extras.getString(EXTRA_SORTBY, ApiKeyMgr.DEFAULT_SORT);
         int page = extras.getInt(EXTRA_PAGE, -1);
 
         MovieUtils.updateSyncStatus(getContext(), MovieContract.StateEntry.STATUS_UPDATING);
         if(page == -1) {
             page = 1;
         }
-        String urlString = ApiKeyMgr.getMoviesUrl(sortBy, "" + page);
+        String urlString = ApiKeyMgr.getMoviesUrl("popular", "" + page);
         URL url = null;
         try {
             url = new URL(urlString);
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
-
-        int type = 0;
-        if(sortBy.equals("popular")) {
-            type = MovieContract.TYPE_POPULAR;
-        } else {
-            type = MovieContract.TYPE_TOP_RATED;
+        if(url != null) {
+            downLoadMovies(url, MovieContract.TYPE_POPULAR);
         }
 
+        urlString = ApiKeyMgr.getMoviesUrl( "top_rated", "" + page);
+        url = null;
+        try {
+            url = new URL(urlString);
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
         if(url != null) {
-            downLoadMovies(url, type);
+            downLoadMovies(url, MovieContract.TYPE_POPULAR);
         }
 
         loadRuntimes();
@@ -118,22 +120,30 @@ public class MovieSyncAdapter extends AbstractThreadedSyncAdapter {
 
     private void loadRuntimes() {
         Cursor cursor = MovieUtils.getAllMovies(getContext());
-        while(cursor.moveToNext()) {
-            int movieIdIndex = cursor.getColumnIndex(MovieContract.MovieEntry.COLUMN_MOVIE_ID);
-            if(movieIdIndex != -1) {
-                String movieId = cursor.getString(movieIdIndex);
-                String urlString = ApiKeyMgr.getMovieUrl(movieId);
-                URL url;
-                try {
-                    url = new URL(urlString);
-                    String runtime = downloadRuntime(url);
-                    if(runtime != null) {
-                        MovieUtils.updateRuntime(getContext(), movieId, runtime);
+        if(cursor == null) {
+            return;
+        }
+
+        try {
+            while (cursor.moveToNext()) {
+                int movieIdIndex = cursor.getColumnIndex(MovieContract.MovieEntry.COLUMN_MOVIE_ID);
+                if (movieIdIndex != -1) {
+                    String movieId = cursor.getString(movieIdIndex);
+                    String urlString = ApiKeyMgr.getMovieUrl(movieId);
+                    URL url;
+                    try {
+                        url = new URL(urlString);
+                        String runtime = downloadRuntime(url);
+                        if (runtime != null) {
+                            MovieUtils.updateRuntime(getContext(), movieId, runtime);
+                        }
+                    } catch (MalformedURLException e) {
+                        e.printStackTrace();
                     }
-                } catch (MalformedURLException e) {
-                    e.printStackTrace();
                 }
             }
+        }finally{
+            cursor.close();
         }
     }
 

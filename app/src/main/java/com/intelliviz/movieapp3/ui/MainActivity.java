@@ -82,7 +82,7 @@ public class MainActivity extends AppCompatActivity implements
 
             fragment = fm.findFragmentByTag(DETAIL_FRAG_TAG);
             if(fragment == null) {
-                fragment = MovieDetailsFragment.newInstance(null, null);
+                fragment = MovieDetailsFragment.newInstance(null);
                 ft.add(R.id.details_fragment, fragment, DETAIL_FRAG_TAG);
                 fragmentAdded = true;
             }

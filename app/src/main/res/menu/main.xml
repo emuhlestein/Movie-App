@@ -6,6 +6,10 @@
         android:title="@string/action_settings"
         android:orderInCategory="100"
         app:showAsAction="never" />
+    <item android:id="@+id/sync"
+        android:title="Sync"
+        android:orderInCategory="200"
+        app:showAsAction="never" />
     <item android:id="@+id/dump_db"
         android:title="Dump Database"
         android:orderInCategory="200"

@@ -13,7 +13,6 @@ import android.support.v4.app.NavUtils;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.ShareActionProvider;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -32,18 +31,8 @@ import com.intelliviz.movieapp3.R;
 import com.intelliviz.movieapp3.Review;
 import com.intelliviz.movieapp3.Trailer;
 import com.intelliviz.movieapp3.db.MovieContract;
-import com.squareup.okhttp.Call;
-import com.squareup.okhttp.Callback;
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.Response;
 import com.squareup.picasso.Picasso;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.text.DecimalFormat;
 import java.text.ParseException;
@@ -116,14 +105,12 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
     /**
      * Create the MovieDetailsFragment.
      * @param movieId The movie to show in the details fragment.
-     * @param reviews The reviews for the movie.
      * @return The newly created fragment.
      */
-    public static MovieDetailsFragment newInstance(String movieId, ArrayList<Review> reviews) {
+    public static MovieDetailsFragment newInstance(String movieId) {
         Bundle args = new Bundle();
 
         args.putString(MOVIE_KEY, movieId);
-        //args.putParcelableArrayList(REVIEWS_KEY, reviews);
         MovieDetailsFragment fragment = new MovieDetailsFragment();
         fragment.setArguments(args);
         return fragment;
@@ -141,17 +128,7 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
 
         //updateUI();
         MovieQueryHandler movieQueryHandler = new MovieQueryHandler(getContext().getContentResolver(), this);
-        String[] projection = {MovieContract.MovieEntry._ID,
-                MovieContract.MovieEntry.COLUMN_MOVIE_ID,
-                MovieContract.MovieEntry.COLUMN_TITLE,
-                MovieContract.MovieEntry.COLUMN_RELEASE_DATA,
-                MovieContract.MovieEntry.COLUMN_AVERAGE_VOTE,
-                MovieContract.MovieEntry.COLUMN_POSTER,
-                MovieContract.MovieEntry.COLUMN_POPULAR,
-                MovieContract.MovieEntry.COLUMN_SYNOPSIS,
-                MovieContract.MovieEntry.COLUMN_TOP_RATED,
-                MovieContract.MovieEntry.COLUMN_FAVORITE,
-                MovieContract.MovieEntry.COLUMN_RUNTIME};
+        String[] projection = null;
         String selection = MovieContract.MovieEntry.TABLE_NAME + "." +
                 MovieContract.MovieEntry.COLUMN_MOVIE_ID + " = ?";
         String[] selectiongArgs = {mMovieId};
@@ -160,17 +137,17 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
         movieQueryHandler.startQuery(1, null, uri, null, selection, selectiongArgs, null);
 
         ReviewQueryHandler reviewQueryHandler = new ReviewQueryHandler(getContext().getContentResolver(), this);
-        projection = null;
-        selection = null; //MovieContract.ReviewEntry.COLUMN_MOVIE_ID + " = ?";
-        selectiongArgs = null; //new String[]{mMovieId};
+        projection = null; // select all columns
+        selection = null;
+        selectiongArgs = null;
 
         uri = MovieContract.ReviewEntry.CONTENT_URI.buildUpon().appendPath(MovieContract.MovieEntry.TABLE_NAME).appendPath(mMovieId).build();
         reviewQueryHandler.startQuery(1, null, uri, projection, selection, selectiongArgs, null);
 
         TrailerQueryHandler trailerQueryHandler = new TrailerQueryHandler(getContext().getContentResolver(), this);
         projection = null;
-        selection = null; //MovieContract.ReviewEntry.COLUMN_MOVIE_ID + " = ?";
-        selectiongArgs = null; //new String[]{mMovieId};
+        selection = null;
+        selectiongArgs = null;
 
         uri = MovieContract.TrailerEntry.CONTENT_URI.buildUpon().appendPath(MovieContract.MovieEntry.TABLE_NAME).appendPath(mMovieId).build();
         trailerQueryHandler.startQuery(1, null, uri, projection, selection, selectiongArgs, null);
@@ -198,16 +175,7 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
         setHasOptionsMenu(true);
 
         mMovieId = getArguments().getString(MOVIE_KEY);
-        mReviews = getArguments().getParcelableArrayList(REVIEWS_KEY);
         mIsNetworkAvailable = MovieListFragment.isNetworkAvailable((AppCompatActivity) getActivity());
-
-        //if(mMovie.isFavorite() || !mIsNetworkAvailable) {
-        //    mLoadFromDatabase = true;
-       // }
-
-        if(mMovieId != null) {
-            //mMovieUrl = ApiKeyMgr.getMovieUrl(mMovie.getMovieId());
-        }
     }
 
     @Override
@@ -252,7 +220,7 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
             if(mMovie != null) {
                 mMovieUrl = ApiKeyMgr.getMovieUrl(mMovie.getMovieId());
             }
-            updateUI();
+            updateUI(0);
         }
     }
 
@@ -261,281 +229,42 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
         if(mMovie != null) {
             mMovieUrl = ApiKeyMgr.getMovieUrl(mMovie.getMovieId());
         }
-        updateUI();
+        updateUI(0);
     }
 
     public void updateSort(boolean isFavorite) {
         clearSelectedMovie();
-        updateUI();
+        updateUI(0);
     }
 
     public void onMarkMovieAsFavoriteClick(View view) {
-        MarkFavoriteMovieTask task = new MarkFavoriteMovieTask();
-        task.execute();
-        MovieUtils.updateFavorite(getContext(), mMovieId, 1);
-        updateUI();
+        new MarkFavoriteMovieTask(mMovieId, 1).execute();
     }
 
     public void onUnmarkMovieAsFavoriteClick(View view) {
-        RemoveMovieFromFavoritesTask  task = new RemoveMovieFromFavoritesTask();
-        task.execute();
-        MovieUtils.updateFavorite(getContext(), mMovieId, 0);
-        updateUI();
+        new MarkFavoriteMovieTask(mMovieId, 0).execute();
     }
 
-    private void updateUI() {
-        /*
-        if(mMovieId == null) {
-            clearSelectedMovie();
-        } else {
-            mAddToFavoriteButton.setVisibility(View.VISIBLE);
-            mTitleView.setText(mMovie.getTitle());
-            mSummaryView.setText(mMovie.getSynopsis());
-            mReleaseDateView.setText(mMovie.getReleaseDate());
-
-            if (mIsFavorite) {
-                String unmarkFavorite = getActivity().getResources().getString(R.string.unmark_favorite);
-                mAddToFavoriteButton.setText(unmarkFavorite);
-                mAddToFavoriteButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        onUnmarkMovieAsFavoriteClick(v);
-                    }
-                });
-            } else {
-                String markFavorite = getActivity().getResources().getString(R.string.mark_as_favorite);
-                mAddToFavoriteButton.setText(markFavorite);
-                mAddToFavoriteButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                            onMarkMovieAsFavoriteClick(v);
-                    }
-                });
-            }
-
-            SimpleDateFormat formatter = new SimpleDateFormat("yyyy-mm-dd");
-            String str = mMovie.getReleaseDate();
-            try {
-                Date date = formatter.parse(mMovie.getReleaseDate());
-
-                formatter = new SimpleDateFormat("yyyy");
-                str = formatter.format(date);
-            } catch (ParseException e) {
-                e.printStackTrace();
-            }
-
-            mReleaseDateView.setText(str);
-            mAverageVoteView.setText(new DecimalFormat("#.#").format(Float.parseFloat(mMovie.getAverageVote())) + "/10");
-
-            if(mMovie.getPoster() != null) {
-                String url = String.format(ApiKeyMgr.PosterUrl, mMovie.getPoster());
-                Picasso
-                        .with(getActivity())
-                        .load(url)
-                        .placeholder(R.mipmap.placeholder)
-                        .into(mPosterView);
-
-            }
-
-            mReviewLayout.removeAllViews();
-            loadMovieRuntime();
-            loadReviews();
-            loadTrailers();
-        }
-        */
-    }
-
-    private void loadReviews() {
-        if(mLoadFromDatabase) {
-            createReviewViews();
-        }
-        else if(mIsNetworkAvailable && mMovie != null) {
-            String url = ApiKeyMgr.getReviewsUrl(mMovie.getMovieId());
-            OkHttpClient client = new OkHttpClient();
-            Request request = new Request.Builder()
-                    .url(url)
-                    .build();
-
-            Call call = client.newCall(request);
-            call.enqueue(new Callback() {
+    private void updateUI(int favorite) {
+        if (favorite == 1) {
+            String unmarkFavorite = getActivity().getResources().getString(R.string.unmark_favorite);
+            mAddToFavoriteButton.setText(unmarkFavorite);
+            mAddToFavoriteButton.setOnClickListener(new View.OnClickListener() {
                 @Override
-                public void onFailure(Request request, IOException e) {
-
-                }
-
-                @Override
-                public void onResponse(Response response) throws IOException {
-                    String jsonData = response.body().string();
-
-                    extractReviewsFromJson(jsonData);
-
-                    if (response.isSuccessful()) {
-                        getActivity().runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                createReviewViews();
-                            }
-                        });
-                    }
-                }
-            });
-        }
-    }
-
-    private void loadTrailers() {
-
-        if(mIsNetworkAvailable && mMovie != null) {
-            String url = ApiKeyMgr.getTrailersUrl(mMovie.getMovieId());
-            OkHttpClient client = new OkHttpClient();
-            Request request = new Request.Builder()
-                    .url(url)
-                    .build();
-
-            Call call = client.newCall(request);
-            call.enqueue(new Callback() {
-                @Override
-                public void onFailure(Request request, IOException e) {
-
-                }
-
-                @Override
-                public void onResponse(Response response) throws IOException {
-                    String jsonData = response.body().string();
-
-                    extractTrailersFromJson(jsonData);
-
-                    if (response.isSuccessful()) {
-
-                        getActivity().runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                createTrailerViews();
-                            }
-                        });
-                    }
+                public void onClick(View v) {
+                    onUnmarkMovieAsFavoriteClick(v);
                 }
             });
         } else {
-            // network is unavailable
-        }
-    }
-
-    private void loadMovieRuntime() {
-
-        if(mIsNetworkAvailable) {
-            OkHttpClient client = new OkHttpClient();
-            Request request = new Request.Builder()
-                    .url(mMovieUrl)
-                    .build();
-
-            Call call = client.newCall(request);
-            call.enqueue(new Callback() {
+            String markFavorite = getActivity().getResources().getString(R.string.mark_as_favorite);
+            mAddToFavoriteButton.setText(markFavorite);
+            mAddToFavoriteButton.setOnClickListener(new View.OnClickListener() {
                 @Override
-                public void onFailure(Request request, IOException e) {
-
-                }
-
-                @Override
-                public void onResponse(Response response) throws IOException {
-                    String jsonData = response.body().string();
-                    JSONObject moviesObject;
-                    try {
-                        moviesObject = new JSONObject(jsonData);
-                        if (mMovie != null) {
-                            mMovie.setRuntime(moviesObject.getString("runtime"));
-                        }
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                        return;
-                    }
-                    if (response.isSuccessful()) {
-                        getActivity().runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (mMovie != null) {
-                                    mRuntimeView.setText(mMovie.getRuntime() + "min");
-                                }
-                            }
-                        });
-                    }
+                public void onClick(View v) {
+                    onMarkMovieAsFavoriteClick(v);
                 }
             });
         }
-    }
-
-    private List<Review> extractReviewsFromJson(String s) {
-        JSONObject reviewsObject = null;
-        try {
-            mReviews = new ArrayList<>();
-            JSONObject oneReview;
-            reviewsObject = new JSONObject(s);
-            JSONArray reviewArray = reviewsObject.getJSONArray("results");
-            Review review;
-            for(int i = 0; i < reviewArray.length(); i++) {
-                oneReview = reviewArray.getJSONObject(i);
-                review = extractReviewFromJson(oneReview);
-                if(review != null) {
-                    mReviews.add(review);
-                }
-            }
-
-            return null;
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        return new ArrayList<>();
-    }
-
-    private List<Review> extractTrailersFromJson(String jsonData) {
-        JSONObject trailersObject = null;
-        try {
-            mTrailers = new ArrayList<>();
-            JSONObject oneTrailer;
-            trailersObject = new JSONObject(jsonData);
-            JSONArray trailerArray = trailersObject.getJSONArray("results");
-            Trailer trailer;
-            for(int i = 0; i < trailerArray.length(); i++) {
-                oneTrailer = trailerArray.getJSONObject(i);
-                trailer = extractTrailerFromJson(oneTrailer);
-                if(trailer != null) {
-                    mTrailers.add(trailer);
-                }
-            }
-
-            return null;
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        return new ArrayList<>();
-    }
-
-    private Trailer extractTrailerFromJson(JSONObject object) {
-        try {
-            String key = object.getString("key");
-            String url = "https://www.youtube.com/watch?v=" + key;
-            Trailer trailer = new Trailer(url);
-            return trailer;
-        } catch (JSONException e) {
-            Log.e(TAG, "Error reading trailer");
-        }
-
-        return null;
-    }
-
-    private Review extractReviewFromJson(JSONObject object) {
-        try {
-            Review review = null;
-            if(mMovie != null) {
-                String author = object.getString("author");
-                String content = object.getString("content");
-                review = new Review(mMovie.getMovieId(), author, content);
-            }
-            return review;
-        } catch (JSONException e) {
-            Log.e(TAG, "Error reading review");
-        }
-
-        return null;
     }
 
     private void createReviewViews() {
@@ -843,41 +572,23 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
     }
 
     private class MarkFavoriteMovieTask extends AsyncTask<Void, Void, Void> {
+        private String mMovieId;
+        private int mFavorite;
+
+        public MarkFavoriteMovieTask(String movieId, int favorite) {
+            mMovieId = movieId;
+            mFavorite = favorite;
+        }
 
         @Override
         protected Void doInBackground(Void... params) {
-            MovieUtils.addMovieToFavorite(getActivity(), mMovie, mReviews);
+            MovieUtils.updateFavoriteMovie(getContext(), mMovieId, mFavorite);
             return null;
         }
 
         @Override
         protected void onPostExecute(Void aVoid) {
-            updateUI();
-            if(mListener != null) {
-                mListener.onMarkMovieAsFavorite(mMovie, mReviews);
-            }
+            updateUI(mFavorite);
         }
-    }
-
-    private class RemoveMovieFromFavoritesTask extends AsyncTask<Void, Void, Void> {
-
-        @Override
-        protected Void doInBackground(Void... params) {
-            MovieUtils.removeMovieFromFavorites(getActivity(), mMovie);
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            updateUI();
-            if(mListener != null) {
-                mListener.onUnmarkMovieAsFavorite(mMovie);
-            }
-        }
-    }
-
-    private class MovieReview {
-        String author;
-        String content;
     }
 }

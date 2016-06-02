@@ -38,7 +38,7 @@ public class MovieDetailsActivity extends AppCompatActivity implements
         Fragment fragment = fm.findFragmentByTag(LIST_FRAG_TAG);
 
         if(fragment == null) {
-            fragment = MovieDetailsFragment.newInstance(movieId, reviews);
+            fragment = MovieDetailsFragment.newInstance(movieId);
             FragmentTransaction ft = fm.beginTransaction();
             ft.add(R.id.fragment_holder, fragment, LIST_FRAG_TAG);
             ft.commit();

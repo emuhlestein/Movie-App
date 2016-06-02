@@ -78,38 +78,43 @@ public class MovieUtils {
     public static void addMovieToDatabase(Context context, String movieId, String poster, String averageVote, String releaseDate, String synopsis, String title, int type) {
         int numRows = 0;
         Cursor cursor = getMovie(context, movieId);
-        if(cursor.moveToFirst()) {
-            int typeIndex = -1;
-            if(type == MovieContract.TYPE_POPULAR) {
-                typeIndex = cursor.getColumnIndex(MovieContract.MovieEntry.COLUMN_POPULAR);
-                if(typeIndex != -1) {
-                    if(cursor.getInt(typeIndex) == 1) {
-                        return;
-                    } else {
-                        ContentValues values = new ContentValues();
-                        values.put(MovieContract.MovieEntry.COLUMN_POPULAR, 1);
-                        Uri uri = MovieContract.MovieEntry.CONTENT_URI;
-                        uri = Uri.withAppendedPath(uri, "" + movieId);
-                        numRows = context.getContentResolver().update(uri, values, null, null);
-                        return;
+        if(cursor != null && cursor.moveToFirst()) {
+            try {
+                int typeIndex = -1;
+                if (type == MovieContract.TYPE_POPULAR) {
+                    typeIndex = cursor.getColumnIndex(MovieContract.MovieEntry.COLUMN_POPULAR);
+                    if (typeIndex != -1) {
+                        if (cursor.getInt(typeIndex) == 1) {
+                            return;
+                        } else {
+                            ContentValues values = new ContentValues();
+                            values.put(MovieContract.MovieEntry.COLUMN_POPULAR, 1);
+                            Uri uri = MovieContract.MovieEntry.CONTENT_URI;
+                            uri = Uri.withAppendedPath(uri, "" + movieId);
+                            numRows = context.getContentResolver().update(uri, values, null, null);
+                            return;
+                        }
+                    }
+                } else {
+                    typeIndex = cursor.getColumnIndex(MovieContract.MovieEntry.COLUMN_TOP_RATED);
+                    if (typeIndex != -1) {
+                        if (cursor.getInt(typeIndex) == 1) {
+                            return;
+                        } else {
+                            ContentValues values = new ContentValues();
+                            values.put(MovieContract.MovieEntry.COLUMN_TOP_RATED, 1);
+                            Uri uri = MovieContract.MovieEntry.CONTENT_URI;
+                            uri = Uri.withAppendedPath(uri, "" + movieId);
+                            numRows = context.getContentResolver().update(uri, values, null, null);
+                            return;
+                        }
                     }
                 }
-            } else {
-                typeIndex = cursor.getColumnIndex(MovieContract.MovieEntry.COLUMN_TOP_RATED);
-                if(typeIndex != -1) {
-                    if(cursor.getInt(typeIndex) == 1) {
-                        return;
-                    } else {
-                        ContentValues values = new ContentValues();
-                        values.put(MovieContract.MovieEntry.COLUMN_TOP_RATED, 1);
-                        Uri uri = MovieContract.MovieEntry.CONTENT_URI;
-                        uri = Uri.withAppendedPath(uri, "" + movieId);
-                        numRows = context.getContentResolver().update(uri, values, null, null);
-                        return;
-                    }
+            } finally {
+                if(cursor != null) {
+                    cursor.close();
                 }
             }
-
         } else {
             // need to add movie
             ContentValues values = new ContentValues();
@@ -152,39 +157,24 @@ public class MovieUtils {
         return numRows;
     }
 
+    public static int updateFavoriteMovie(Context context, String movieId, int favorite) {
+        Cursor cursor = getMovie(context, movieId);
+        if(cursor == null) {
+            return 0;
+        }
 
-    public static void addMovieToFavorite(Activity activity, Movie movie, List<Review> reviews) {
-        if(doesMovieExist(activity, movie) != -1) {
-            //Toast.makeText(activity, activity.getString(R.string.movie_exists) + movie.getTitle(), Toast.LENGTH_LONG).show();
-            return;
+        if(!cursor.moveToFirst()) {
+            return 0;
         }
 
         ContentValues values = new ContentValues();
-        values.put(MovieContract.MovieEntry.COLUMN_MOVIE_ID, movie.getMovieId());
-        values.put(MovieContract.MovieEntry.COLUMN_POSTER, movie.getPoster());
-        values.put(MovieContract.MovieEntry.COLUMN_AVERAGE_VOTE, movie.getAverageVote());
-        values.put(MovieContract.MovieEntry.COLUMN_RELEASE_DATA, movie.getReleaseDate());
-        values.put(MovieContract.MovieEntry.COLUMN_RUNTIME, movie.getRuntime());
-        values.put(MovieContract.MovieEntry.COLUMN_SYNOPSIS, movie.getSynopsis());
-        values.put(MovieContract.MovieEntry.COLUMN_TITLE, movie.getTitle());
-        Uri uri = activity.getContentResolver().insert(MovieContract.MovieEntry.CONTENT_URI, values);
-        String id = uri.getLastPathSegment();
-        movie.setId(Long.parseLong(id));
-
-        if(reviews != null) {
-            for (Review review : reviews) {
-                values = new ContentValues();
-                values.put(MovieContract.ReviewEntry.COLUMN_MOVIE_ID, movie.getMovieId());
-                values.put(MovieContract.ReviewEntry.COLUMN_AUTHOR, review.getAuthor());
-                values.put(MovieContract.ReviewEntry.COLUMN_CONTENT, review.getContent());
-                uri = activity.getContentResolver().insert(MovieContract.ReviewEntry.CONTENT_URI, values);
-            }
-        } else {
-            Log.d(TAG, "Reviews is null");
-        }
+        values.put(MovieContract.MovieEntry.COLUMN_MOVIE_ID, movieId);
+        values.put(MovieContract.MovieEntry.COLUMN_FAVORITE, favorite);
+        Uri uri = MovieContract.MovieEntry.CONTENT_URI;
+        uri = Uri.withAppendedPath(uri, "" + movieId);
+        int numRows = context.getContentResolver().update(uri, values, null, null);
+        return numRows;
     }
-
-
 
     public static void dumpMovies(Activity activity) {
         Cursor cursor = getAllMovies(activity);
@@ -294,6 +284,12 @@ public class MovieUtils {
         return -1;
     }
 
+    /**
+     * NOTE cursor can be null. Need to check for this.
+     * @param context
+     * @param movieId
+     * @return
+     */
     public static Cursor getMovie(Context context, String movieId) {
         Uri uri = MovieContract.MovieEntry.CONTENT_URI;
         String selectionClause = MovieContract.MovieEntry.COLUMN_MOVIE_ID + " = ?";
@@ -306,15 +302,21 @@ public class MovieUtils {
 
     public static void addReview(Context context, String reviewId, String movieId, String author, String content) {
         Cursor cursor = getReview(context, reviewId);
-        if(cursor.moveToFirst()) {
-           return;
+        try {
+            if (cursor == null || cursor.moveToFirst()) {
+                return;
+            }
+            ContentValues values = new ContentValues();
+            values.put(MovieContract.ReviewEntry.COLUMN_REVIEW_ID, reviewId);
+            values.put(MovieContract.ReviewEntry.COLUMN_MOVIE_ID, movieId);
+            values.put(MovieContract.ReviewEntry.COLUMN_AUTHOR, author);
+            values.put(MovieContract.ReviewEntry.COLUMN_CONTENT, content);
+            Uri uri = context.getContentResolver().insert(MovieContract.ReviewEntry.CONTENT_URI, values);
+        }finally {
+            if(cursor != null) {
+                cursor.close();
+            }
         }
-        ContentValues values = new ContentValues();
-        values.put(MovieContract.ReviewEntry.COLUMN_REVIEW_ID, reviewId);
-        values.put(MovieContract.ReviewEntry.COLUMN_MOVIE_ID, movieId);
-        values.put(MovieContract.ReviewEntry.COLUMN_AUTHOR, author);
-        values.put(MovieContract.ReviewEntry.COLUMN_CONTENT, content);
-        Uri uri = context.getContentResolver().insert(MovieContract.ReviewEntry.CONTENT_URI, values);
     }
 
     public static Cursor getReviews(Context context, String movieId) {
@@ -342,14 +344,20 @@ public class MovieUtils {
 
     public static void addTrailer(Context context, String trailerId, String movieId, String url) {
         Cursor cursor = getTrailer(context, trailerId);
-        if(cursor.moveToFirst()) {
-            return;
+        try {
+            if (cursor == null || cursor.moveToFirst()) {
+                return;
+            }
+            ContentValues values = new ContentValues();
+            values.put(MovieContract.TrailerEntry.COLUMN_TRAILER_ID, trailerId);
+            values.put(MovieContract.TrailerEntry.COLUMN_MOVIE_ID, movieId);
+            values.put(MovieContract.TrailerEntry.COLUMN_URL, url);
+            Uri uri = context.getContentResolver().insert(MovieContract.TrailerEntry.CONTENT_URI, values);
+        }finally{
+            if(cursor != null) {
+                cursor.close();
+            }
         }
-        ContentValues values = new ContentValues();
-        values.put(MovieContract.TrailerEntry.COLUMN_TRAILER_ID, trailerId);
-        values.put(MovieContract.TrailerEntry.COLUMN_MOVIE_ID, movieId);
-        values.put(MovieContract.TrailerEntry.COLUMN_URL, url);
-        Uri uri = context.getContentResolver().insert(MovieContract.TrailerEntry.CONTENT_URI, values);
     }
 
     public static Cursor getTrailers(Context context, String movieId) {
