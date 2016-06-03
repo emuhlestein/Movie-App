@@ -25,7 +25,8 @@ public class MovieContract {
     public static final int TYPE_FAVORITE = 1;
     public static final int TYPE_POPULAR = 2;
     public static final int TYPE_TOP_RATED = 3;
-    public static final int LOAD_STATUS = 4;
+    public static final int TYPE_UPCOMING = 4;
+    public static final int LOAD_STATUS = 5;
 
     public static final class MovieEntry implements BaseColumns {
         public static final Uri CONTENT_URI = BASE_CONTENT_URI.buildUpon().appendPath(PATH_MOVIE).build();
@@ -45,6 +46,7 @@ public class MovieContract {
         public static final String COLUMN_RUNTIME = "runtime";
         public static final String COLUMN_FAVORITE = "favorite";
         public static final String COLUMN_TOP_RATED = "top_rated";
+        public static final String COLUMN_UPCOMING = "upcoming";
         public static final String COLUMN_POPULAR = "popular";
 
         public static Uri buildMovieByListTypeUri(String type) {

@@ -24,14 +24,10 @@ import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.intelliviz.movieapp3.ApiKeyMgr;
-import com.intelliviz.movieapp3.MovieAdapter;
-import com.intelliviz.movieapp3.MovieBox;
 import com.intelliviz.movieapp3.MovieCursorAdapter;
 import com.intelliviz.movieapp3.MovieState;
 import com.intelliviz.movieapp3.MovieUtils;
@@ -51,19 +47,15 @@ public class MovieListFragment extends Fragment implements
     private static final String PREF_SORT_BY = "sort_by";
     private static final String TAG = MovieListFragment.class.getSimpleName();
     private static final String DEFAULT_SORT_BY_OPTION = "popular";
-    private static final String MOVIE_LIST_KEY = "movie_list_key";
     public static final int MOVIE_LOADER = 0;
     public static final int STATUS_LOADER = 1;
     private static final String COLUMN_SPAN_KEY = "column span key";
-    private String mMovieUrls;
-    private MovieAdapter mPopularAdapter;
     private MovieCursorAdapter mMovieCursorAdapter;
     private OnSelectMovieListener mListener;
     private String mSortBy;
     private int mSpanCount;
     private boolean mRestartLoader;
 
-    @Bind(R.id.layoutView) LinearLayout mLinearView;
     @Bind(R.id.gridView) RecyclerView mRecyclerView;
     @Bind(R.id.emptyView) TextView mEmptyView;
     @Bind(R.id.progressBar) ProgressBar mProgressBar;
@@ -138,8 +130,6 @@ public class MovieListFragment extends Fragment implements
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getActivity());
         String sort_key = getResources().getString(R.string.pref_sort_by_key);
         mSortBy = sp.getString(sort_key, DEFAULT_SORT_BY_OPTION);
-        mMovieUrls = ApiKeyMgr.getMoviesUrl(mSortBy);
-
         mSpanCount = getArguments().getInt(COLUMN_SPAN_KEY);
     }
 
@@ -188,7 +178,6 @@ public class MovieListFragment extends Fragment implements
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putParcelableArrayList(MOVIE_LIST_KEY, MovieBox.get().getMovies());
     }
 
     @Override
@@ -237,6 +226,11 @@ public class MovieListFragment extends Fragment implements
                     selection = MovieContract.MovieEntry.TABLE_NAME + "." +
                             MovieContract.MovieEntry.COLUMN_FAVORITE + " = ?";
                     break;
+                case MovieContract.TYPE_UPCOMING:
+                    uri = MovieContract.MovieEntry.buildMovieByListTypeUri("upcoming");
+                    selection = MovieContract.MovieEntry.TABLE_NAME + "." +
+                            MovieContract.MovieEntry.COLUMN_UPCOMING + " = ?";
+                    break;
                 default:
                     return null;
             }
@@ -256,6 +250,7 @@ public class MovieListFragment extends Fragment implements
                                     MovieContract.MovieEntry.TABLE_NAME + "." + MovieContract.MovieEntry.COLUMN_RUNTIME,
                                     MovieContract.MovieEntry.TABLE_NAME + "." + MovieContract.MovieEntry.COLUMN_FAVORITE,
                                     MovieContract.MovieEntry.TABLE_NAME + "." + MovieContract.MovieEntry.COLUMN_POPULAR,
+                                    MovieContract.MovieEntry.TABLE_NAME + "." + MovieContract.MovieEntry.COLUMN_UPCOMING,
                                     MovieContract.MovieEntry.TABLE_NAME + "." + MovieContract.MovieEntry.COLUMN_TOP_RATED,
                             },
                     selection,
@@ -302,6 +297,14 @@ public class MovieListFragment extends Fragment implements
         mRestartLoader = true;
     }
 
+    public void refreshList(String sortBy) {
+        mSortBy = sortBy;
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getActivity());
+        sp.edit().putString(PREF_SORT_BY, sortBy);
+        mRestartLoader = true;
+        restartLoader(mSortBy);
+    }
+
     public static boolean isNetworkAvailable(AppCompatActivity activity) {
         boolean isAvailable = false;
         if(activity != null) {
@@ -337,6 +340,9 @@ public class MovieListFragment extends Fragment implements
                 break;
             case "popular":
                 bundle.putInt(PREF_SORT_BY, MovieContract.TYPE_POPULAR);
+                break;
+            case "upcoming":
+                bundle.putInt(PREF_SORT_BY, MovieContract.TYPE_UPCOMING);
                 break;
             default:
                 bundle.putInt(PREF_SORT_BY, MovieContract.TYPE_TOP_RATED);

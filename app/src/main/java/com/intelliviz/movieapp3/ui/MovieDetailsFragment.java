@@ -25,7 +25,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.intelliviz.movieapp3.ApiKeyMgr;
-import com.intelliviz.movieapp3.Movie;
 import com.intelliviz.movieapp3.MovieUtils;
 import com.intelliviz.movieapp3.R;
 import com.intelliviz.movieapp3.Review;
@@ -55,13 +54,13 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
     private static final String SELECTED_MOVIE_KEY = "selected_movie";
     public static final String MOVIE_TO_DELETE_EXTRA = "movie to delete";
     private String mMovieId;
-    private Movie mMovie;
+    //private Movie mMovie;
     private List<Review> mReviews;
     private List<Trailer> mTrailers;
-    private String mMovieUrl;
+    //private String mMovieUrl;
     private OnSelectReviewListener mListener;
-    private boolean mLoadFromDatabase = false;
-    private boolean mIsNetworkAvailable = false;
+    //private boolean mLoadFromDatabase = false;
+    //private boolean mIsNetworkAvailable = false;
     private ShareActionProvider mShareActionProvider;
 
     @Bind(R.id.posterView) ImageView mPosterView;
@@ -167,7 +166,6 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
         setHasOptionsMenu(true);
 
         mMovieId = getArguments().getString(MOVIE_KEY);
-        mIsNetworkAvailable = MovieListFragment.isNetworkAvailable((AppCompatActivity) getActivity());
     }
 
     @Override
@@ -201,26 +199,26 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putParcelable(SELECTED_MOVIE_KEY, mMovie);
+        outState.putString(SELECTED_MOVIE_KEY, mMovieId);
     }
 
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         if(savedInstanceState != null) {
-            mMovie = savedInstanceState.getParcelable(SELECTED_MOVIE_KEY);
-            if(mMovie != null) {
-                mMovieUrl = ApiKeyMgr.getMovieUrl(mMovie.getMovieId());
-            }
+            mMovieId = savedInstanceState.getParcelable(SELECTED_MOVIE_KEY);
+            //if(mMovie != null) {
+            //    mMovieUrl = ApiKeyMgr.getMovieUrl(mMovie.getMovieId());
+            //}
             updateUI(0);
         }
     }
 
-    public void updateMovie(Movie movie) {
-        mMovie = movie;
-        if(mMovie != null) {
-            mMovieUrl = ApiKeyMgr.getMovieUrl(mMovie.getMovieId());
-        }
+    public void updateMovie(String movieId) {
+        //mMovie = movie;
+        //if(mMovie != null) {
+        //    mMovieUrl = ApiKeyMgr.getMovieUrl(mMovie.getMovieId());
+        //}
         updateUI(0);
     }
 

@@ -64,7 +64,7 @@ public class MovieSyncAdapter extends AbstractThreadedSyncAdapter {
             downLoadMovies(url, MovieContract.TYPE_POPULAR);
         }
 
-        urlString = ApiKeyMgr.getMoviesUrl( "top_rated", "" + page);
+        urlString = ApiKeyMgr.getMoviesUrl("top_rated", "" + page);
         url = null;
         try {
             url = new URL(urlString);
@@ -72,8 +72,20 @@ public class MovieSyncAdapter extends AbstractThreadedSyncAdapter {
             e.printStackTrace();
         }
         if(url != null) {
-            downLoadMovies(url, MovieContract.TYPE_POPULAR);
+            downLoadMovies(url, MovieContract.TYPE_TOP_RATED);
         }
+
+        urlString = ApiKeyMgr.getMoviesUrl("upcoming", "" + page);
+        url = null;
+        try {
+            url = new URL(urlString);
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+        if(url != null) {
+            downLoadMovies(url, MovieContract.TYPE_UPCOMING);
+        }
+
 
         loadRuntimes();
         downloadReviews();
@@ -127,9 +139,16 @@ public class MovieSyncAdapter extends AbstractThreadedSyncAdapter {
         try {
             while (cursor.moveToNext()) {
                 int movieIdIndex = cursor.getColumnIndex(MovieContract.MovieEntry.COLUMN_MOVIE_ID);
+                int titleIndex = cursor.getColumnIndex(MovieContract.MovieEntry.COLUMN_TITLE);
+                String title = "???????";
+                if(titleIndex != -1) {
+                    title = cursor.getString(titleIndex);
+                }
+
                 if (movieIdIndex != -1) {
                     String movieId = cursor.getString(movieIdIndex);
                     String urlString = ApiKeyMgr.getMovieUrl(movieId);
+                    Log.d(TAG, title + "   " + movieId);
                     URL url;
                     try {
                         url = new URL(urlString);

@@ -4,11 +4,14 @@
         <item>@string/most_popular</item>
         <item>@string/highest_rated</item>
         <item>@string/favorite</item>
+        <item>@string/upcoming</item>
     </string-array>
     <string-array name="sort_by_values">
         <item>"popular"</item>
         <item>"top_rated"</item>
-        <item>"favorite</item>
+        <item>"favorite"</item>
+        <item>"upcoming"</item>
     </string-array>
 
+    <string name="upcoming">Upcoming</string>
 </resources>

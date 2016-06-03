@@ -13,4 +13,8 @@
     <string name="no_movie_selected">No Movie Selected</string>
     <string name="empty_list">LIST IS EMPTY</string>
     <string name="movie_exists">"Movie already marked as favorite. It will not be added: "</string>
+    <string name="popular_movies">Popular</string>
+    <string name="top_rated_movies">Top Rated</string>
+    <string name="action_upcoming_movies">Upcoming</string>
+    <string name="favorite_movies">Favorite</string>
 </resources>

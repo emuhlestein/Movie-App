@@ -4,7 +4,6 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -17,14 +16,10 @@ import android.view.MenuItem;
 import android.view.View;
 
 import com.intelliviz.movieapp3.ApiKeyMgr;
-import com.intelliviz.movieapp3.Movie;
 import com.intelliviz.movieapp3.MovieUtils;
 import com.intelliviz.movieapp3.R;
 import com.intelliviz.movieapp3.Review;
 import com.intelliviz.movieapp3.Trailer;
-import com.intelliviz.movieapp3.db.MovieContract;
-
-import java.util.ArrayList;
 
 /**
  * Main activity for movie app
@@ -114,6 +109,14 @@ public class MainActivity extends AppCompatActivity implements
             ft.addToBackStack(null);
             ft.commit();
             return true;
+        } else if(id == R.id.action_favorite) {
+            refreshMovieList("favorite");
+        } else if(id == R.id.action_top_rated) {
+            refreshMovieList("top_rated");
+        } else if(id == R.id.action_popular) {
+            refreshMovieList("popular");
+        } else if(id == R.id.action_upcoming) {
+            refreshMovieList("upcoming");
         } else if(id == R.id.dump_db) {
             MovieUtils.dumpMovies(this);
         }
@@ -226,28 +229,14 @@ public class MainActivity extends AppCompatActivity implements
         super.onPause();
     }
 
-    /**
-     * Get all the reviews for the specified movie.
-     *
-     * @param movie The movie.
-     * @return The list of reviews.
-     */
-    private ArrayList<Review> getReviews(Movie movie) {
-        ArrayList<Review> reviews = new ArrayList<>();
-        Uri uri = MovieContract.ReviewEntry.CONTENT_URI;
-
-        String[] projection = {MovieContract.ReviewEntry.COLUMN_CONTENT, MovieContract.ReviewEntry.COLUMN_AUTHOR, MovieContract.ReviewEntry.COLUMN_MOVIE_ID};
-        Cursor cursor = getContentResolver().query(uri, projection, null, null, null);
-        while (cursor.moveToNext()) {
-            int contentIndex = cursor.getColumnIndex(MovieContract.ReviewEntry.COLUMN_CONTENT);
-            int authorIndex = cursor.getColumnIndex(MovieContract.ReviewEntry.COLUMN_AUTHOR);
-            String content = cursor.getString(contentIndex);
-            String author = cursor.getString(authorIndex);
-            Review review = new Review("", author, content);
-            reviews.add(review);
+    private void refreshMovieList(String sortBy) {
+        FragmentManager fm = getSupportFragmentManager();
+        Fragment fragment;
+        FragmentTransaction ft = fm.beginTransaction();
+        fragment = fm.findFragmentByTag(LIST_FRAG_TAG);
+        if (fragment != null && fragment instanceof MovieListFragment ) {
+            ((MovieListFragment)fragment).refreshList(sortBy);
         }
-
-        return reviews;
     }
 
     /**

@@ -19,7 +19,7 @@ import android.text.TextUtils;
 public class MovieProvider extends ContentProvider {
     private SqliteHelper mSqliteHelper;
     private static final String DBASE_NAME = "movies";
-    private static final int DBASE_VERSION = 12;
+    private static final int DBASE_VERSION = 13;
     private static final int MOVIE_LIST = 101;
     private static final int MOVIE_ID = 102;
     private static final int MOVIE_TYPE_ID = 103;
@@ -149,7 +149,7 @@ public class MovieProvider extends ContentProvider {
             case TRAILER_ID:
                 // get a particular review: "trailer/#"
                 sqLiteQueryBuilder.setTables(MovieContract.TrailerEntry.TABLE_NAME);
-                sqLiteQueryBuilder.appendWhere(MovieContract.TrailerEntry.COLUMN_MOVIE_ID +
+                sqLiteQueryBuilder.appendWhere(MovieContract.TrailerEntry.COLUMN_TRAILER_ID +
                         "='" + uri.getLastPathSegment() + "'");
                 break;
             case STATE_ID:
@@ -341,6 +341,7 @@ public class MovieProvider extends ContentProvider {
                     MovieContract.MovieEntry.COLUMN_TITLE + " TEXT NOT NULL, " +
                     MovieContract.MovieEntry.COLUMN_POPULAR + " INTEGER NOT NULL, " +
                     MovieContract.MovieEntry.COLUMN_TOP_RATED + " INTEGER NOT NULL, " +
+                    MovieContract.MovieEntry.COLUMN_UPCOMING + " INTEGER NOT NULL, " +
                     MovieContract.MovieEntry.COLUMN_FAVORITE + " INTEGER NOT NULL);";
 
             db.execSQL(sql);
