@@ -3,6 +3,7 @@ package com.intelliviz.movieapp3.ui;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -47,8 +48,11 @@ public class MovieReviewFragment extends Fragment {
         mReviewText.setText(mReview.getContent());
 
         AppCompatActivity activity = (AppCompatActivity)getActivity();
-        activity.getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        activity.getSupportActionBar().setSubtitle(mReview.getAuthor());
+        ActionBar actionBar = activity.getSupportActionBar();
+        if(actionBar != null) {
+            activity.getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            activity.getSupportActionBar().setSubtitle(mReview.getAuthor());
+        }
 
         return view;
     }

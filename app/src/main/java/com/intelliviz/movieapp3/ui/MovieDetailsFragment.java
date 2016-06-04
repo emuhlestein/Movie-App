@@ -3,16 +3,16 @@ package com.intelliviz.movieapp3.ui;
 import android.content.AsyncQueryHandler;
 import android.content.ContentResolver;
 import android.content.Context;
-import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.NavUtils;
-import android.support.v4.view.MenuItemCompat;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.ShareActionProvider;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -33,12 +33,12 @@ import com.intelliviz.movieapp3.db.MovieContract;
 import com.squareup.picasso.Picasso;
 
 import java.lang.ref.WeakReference;
-import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
@@ -46,22 +46,13 @@ import butterknife.ButterKnife;
 /**
  * Details activity. Show the details of a selected movie.
  */
-public class MovieDetailsFragment extends Fragment implements OnLoadMovieListener {
-    private static final String TAG = MovieDetailsFragment.class.getSimpleName();
+public class MovieDetailsFragment extends Fragment implements OnLoadMovieListener, OnMarkFavoriteMovieListener {
     private static final String MOVIE_KEY = "movie_key";
-    private static final String FAVORITE_KEY = "favorite_key";
-    private static final String REVIEWS_KEY = "reviews_key";
-    private static final String SELECTED_MOVIE_KEY = "selected_movie";
-    public static final String MOVIE_TO_DELETE_EXTRA = "movie to delete";
     private String mMovieId;
-    //private Movie mMovie;
+    private String mNewMovieId;
     private List<Review> mReviews;
     private List<Trailer> mTrailers;
-    //private String mMovieUrl;
     private OnSelectReviewListener mListener;
-    //private boolean mLoadFromDatabase = false;
-    //private boolean mIsNetworkAvailable = false;
-    private ShareActionProvider mShareActionProvider;
 
     @Bind(R.id.posterView) ImageView mPosterView;
     @Bind(R.id.titleView) TextView mTitleView;
@@ -71,7 +62,6 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
     @Bind(R.id.averageVoteView) TextView mAverageVoteView;
     @Bind(R.id.review_layout) LinearLayout mReviewLayout;
     @Bind(R.id.addToFavoritesButton) Button mAddToFavoriteButton;
-
 
     public interface OnSelectReviewListener {
 
@@ -107,6 +97,11 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
         return fragment;
     }
 
+
+    public MovieDetailsFragment() {
+        mNewMovieId = null;
+    }
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                                 Bundle savedInstanceState) {
@@ -115,33 +110,25 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
         ButterKnife.bind(this, view);
 
         AppCompatActivity activity = (AppCompatActivity)getActivity();
-        activity.getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        ActionBar actionBar = activity.getSupportActionBar();
+        if(actionBar != null) {
+            actionBar.setDisplayHomeAsUpEnabled(true);
+        }
 
-        //updateUI();
-        MovieQueryHandler movieQueryHandler = new MovieQueryHandler(getContext().getContentResolver(), this);
-        String[] projection = null;
-        String selection = MovieContract.MovieEntry.TABLE_NAME + "." +
-                MovieContract.MovieEntry.COLUMN_MOVIE_ID + " = ?";
-        String[] selectiongArgs = {mMovieId};
-
-        Uri uri = MovieContract.MovieEntry.CONTENT_URI.buildUpon().appendPath(mMovieId).build();
-        movieQueryHandler.startQuery(1, null, uri, null, selection, selectiongArgs, null);
-
-        ReviewQueryHandler reviewQueryHandler = new ReviewQueryHandler(getContext().getContentResolver(), this);
-        projection = null; // select all columns
-        selection = null;
-        selectiongArgs = null;
-
-        uri = MovieContract.ReviewEntry.CONTENT_URI.buildUpon().appendPath(MovieContract.MovieEntry.TABLE_NAME).appendPath(mMovieId).build();
-        reviewQueryHandler.startQuery(1, null, uri, projection, selection, selectiongArgs, null);
-
-        TrailerQueryHandler trailerQueryHandler = new TrailerQueryHandler(getContext().getContentResolver(), this);
-        projection = null;
-        selection = null;
-        selectiongArgs = null;
-
-        uri = MovieContract.TrailerEntry.CONTENT_URI.buildUpon().appendPath(MovieContract.MovieEntry.TABLE_NAME).appendPath(mMovieId).build();
-        trailerQueryHandler.startQuery(1, null, uri, projection, selection, selectiongArgs, null);
+        if(mNewMovieId != null ) {
+            mMovieId = mNewMovieId;
+            mNewMovieId = null;
+        } else {
+            SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getContext());
+            String movieId = sp.getString(MOVIE_KEY, null);
+            if (movieId != null) {
+                mMovieId = movieId;
+            }
+        }
+        mAddToFavoriteButton.setVisibility(View.GONE);
+        if(mMovieId != null) {
+            updateMovie(mMovieId);
+        }
 
         return view;
     }
@@ -149,12 +136,6 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.details_fragment_menu, menu);
-        // Locate MenuItem with ShareActionProvider
-        MenuItem item = menu.findItem(R.id.menu_item_share);
-
-        // Fetch and store ShareActionProvider
-        mShareActionProvider = (ShareActionProvider) MenuItemCompat.getActionProvider(item);
-
         super.onCreateOptionsMenu(menu, inflater);
     }
 
@@ -165,7 +146,7 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
         // causes onCreateOptionMenu to get called
         setHasOptionsMenu(true);
 
-        mMovieId = getArguments().getString(MOVIE_KEY);
+        mNewMovieId = getArguments().getString(MOVIE_KEY);
     }
 
     @Override
@@ -199,40 +180,58 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putString(SELECTED_MOVIE_KEY, mMovieId);
+        outState.putString(MOVIE_KEY, mMovieId);
     }
-
-    /*
-    @Override
-    public void onActivityCreated(Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
-        if(savedInstanceState != null) {
-            //mMovieId = savedInstanceState.getString(SELECTED_MOVIE_KEY);
-            //if(mMovie != null) {
-            //    mMovieUrl = ApiKeyMgr.getMovieUrl(mMovie.getMovieId());
-            //}
-            updateUI(0);
-        }
-    }
-    */
 
     public void updateMovie(String movieId) {
-        //mMovie = movie;
-        //if(mMovie != null) {
-        //    mMovieUrl = ApiKeyMgr.getMovieUrl(mMovie.getMovieId());
-        //}
-        updateUI(0);
+        if(movieId == null){
+            return;
+        }
+
+        mMovieId = movieId;
+
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getContext());
+        SharedPreferences.Editor editor = sp.edit();
+        editor.putString(MOVIE_KEY, movieId);
+        editor.apply();
+
+        clearSelectedMovie();
+        MovieQueryHandler movieQueryHandler = new MovieQueryHandler(getContext().getContentResolver(), this);
+        String selection = MovieContract.MovieEntry.TABLE_NAME + "." +
+                MovieContract.MovieEntry.COLUMN_MOVIE_ID + " = ?";
+        String[] selectionArgs = {mMovieId};
+
+        Uri uri = MovieContract.MovieEntry.CONTENT_URI.buildUpon().appendPath(mMovieId).build();
+        movieQueryHandler.startQuery(1, null, uri, null, selection, selectionArgs, null);
+
+        ReviewQueryHandler reviewQueryHandler = new ReviewQueryHandler(getContext().getContentResolver(), this);
+
+        uri = MovieContract.ReviewEntry.CONTENT_URI.buildUpon().appendPath(MovieContract.MovieEntry.TABLE_NAME).appendPath(mMovieId).build();
+        reviewQueryHandler.startQuery(1, null, uri, null, null, null, null);
+
+        TrailerQueryHandler trailerQueryHandler = new TrailerQueryHandler(getContext().getContentResolver(), this);
+
+        uri = MovieContract.TrailerEntry.CONTENT_URI.buildUpon().appendPath(MovieContract.MovieEntry.TABLE_NAME).appendPath(mMovieId).build();
+        trailerQueryHandler.startQuery(1, null, uri, null, null, null, null);
     }
 
-    public void onMarkMovieAsFavoriteClick(View view) {
-        new MarkFavoriteMovieTask(mMovieId, 1).execute();
+    @Override
+    public void onMarkFavoriteMovie(int favorite) {
+        updateUI(favorite);
         if(mListener != null) {
             mListener.onUpdateMovieList();
         }
     }
 
-    public void onUnmarkMovieAsFavoriteClick(View view) {
-        new MarkFavoriteMovieTask(mMovieId, 0).execute();
+    public void onMarkMovieAsFavoriteClick() {
+        new MarkFavoriteMovieTask(getContext(), mMovieId, 1, this).execute();
+        if(mListener != null) {
+            mListener.onUpdateMovieList();
+        }
+    }
+
+    public void onUnmarkMovieAsFavoriteClick() {
+        new MarkFavoriteMovieTask(getContext(), mMovieId, 0, this).execute();
         if(mListener != null) {
             mListener.onUpdateMovieList();
         }
@@ -245,7 +244,7 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
             mAddToFavoriteButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    onUnmarkMovieAsFavoriteClick(v);
+                    onUnmarkMovieAsFavoriteClick();
                 }
             });
         } else {
@@ -254,20 +253,9 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
             mAddToFavoriteButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    onMarkMovieAsFavoriteClick(v);
+                    onMarkMovieAsFavoriteClick();
                 }
             });
-        }
-    }
-
-    private void createReviewViews() {
-        if(mReviews == null || mReviews.size() == 0) {
-            return;
-        }
-
-        for(int i = 0; i < mReviews.size(); i++) {
-            View view = createReviewRow(i);
-            mReviewLayout.addView(view);
         }
     }
 
@@ -278,7 +266,12 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
         // are those of the parent. View will have the textview. It has to be added
         // manually, so return it.
         Button view = (Button) inflater.inflate(R.layout.review_item_layout, mReviewLayout, false);
-        view.setText("Review " + (num+1));
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(getContext().getString(R.string.review_string));
+        sb.append(" ");
+        sb.append(Integer.toString(num + 1));
+        view.setText(sb.toString());
         view.setTag(num);
         view.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -293,19 +286,6 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
         return view;
     }
 
-    private void createTrailerViews() {
-        if(mTrailers == null || mTrailers.size() == 0) {
-            return;
-        }
-
-        createShareIntent(mTrailers.get(0).getUrl());
-
-        for(int i = 0; i < mTrailers.size(); i++) {
-            View view = createTrailerRow(i);
-            mReviewLayout.addView(view);
-        }
-    }
-
     private View createTrailerRow(int num) {
         LayoutInflater inflater = getActivity().getLayoutInflater();
 
@@ -313,7 +293,12 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
         // are those of the parent. View will have the textview. It has to be added
         // manually, so return it.
         Button view = (Button) inflater.inflate(R.layout.review_item_layout, mReviewLayout, false);
-        view.setText("Trailer " + (num+1));
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(getContext().getString(R.string.trailer_string));
+        sb.append(" ");
+        sb.append(Integer.toString(num + 1));
+        view.setText(sb.toString());
         view.setTag(num);
         view.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -326,22 +311,6 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
         });
 
         return view;
-    }
-
-    private void setShareIntent(Intent shareIntent) {
-        if (mShareActionProvider != null) {
-            mShareActionProvider.setShareIntent(shareIntent);
-        }
-    }
-
-    private void createShareIntent(String url) {
-        Intent intent = new Intent();
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
-        intent.setAction(Intent.ACTION_SEND);
-        intent.putExtra(Intent.EXTRA_TEXT, url);
-        intent.setType("video/mp4");
-
-        setShareIntent(intent);
     }
 
     private void clearSelectedMovie() {
@@ -365,7 +334,7 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
 
     @Override
     public void onLoadMovie(Cursor cursor) {
-        if(!cursor.moveToFirst()) {
+        if(cursor == null || !cursor.moveToFirst()) {
             return;
         }
 
@@ -409,7 +378,11 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
 
         mTitleView.setText(title);
         mSummaryView.setText(synopsis);
-        mRuntimeView.setText(runtime + "min");
+        
+        StringBuilder sb = new StringBuilder();
+        sb.append(runtime);
+        sb.append(getContext().getString(R.string.min_label));
+        mRuntimeView.setText(sb.toString());
 
         if (favorite) {
             String unmarkFavorite = getActivity().getResources().getString(R.string.unmark_favorite);
@@ -417,7 +390,7 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
             mAddToFavoriteButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    onUnmarkMovieAsFavoriteClick(v);
+                    onUnmarkMovieAsFavoriteClick();
                 }
             });
         } else {
@@ -426,24 +399,26 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
             mAddToFavoriteButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    onMarkMovieAsFavoriteClick(v);
+                    onMarkMovieAsFavoriteClick();
                 }
             });
         }
 
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-mm-dd");
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-mm-dd", Locale.US);
         String str = releaseDate;
         try {
             Date date = formatter.parse(releaseDate);
 
-            formatter = new SimpleDateFormat("yyyy");
+            formatter = new SimpleDateFormat("yyyy", Locale.US);
             str = formatter.format(date);
         } catch (ParseException e) {
             e.printStackTrace();
         }
 
         mReleaseDateView.setText(str);
-        mAverageVoteView.setText(new DecimalFormat("#.#").format(Float.parseFloat(aveVote)) + "/10");
+
+        String aveVoteString = String.format(Locale.US, "%1$.1f", Float.parseFloat(aveVote)) + "/10";
+        mAverageVoteView.setText(aveVoteString);
 
         if(!poster.equals("")) {
             String url = String.format(ApiKeyMgr.PosterUrl, poster);
@@ -502,13 +477,9 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
 
         private WeakReference<OnLoadMovieListener> mListener;
 
-        public MovieQueryHandler(ContentResolver cr) {
-            super(cr);
-        }
-
         public MovieQueryHandler(ContentResolver cr, OnLoadMovieListener listener) {
             super(cr);
-            mListener = new WeakReference<OnLoadMovieListener>(listener);
+            mListener = new WeakReference<>(listener);
         }
 
         @Override
@@ -524,13 +495,9 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
 
         private WeakReference<OnLoadMovieListener> mListener;
 
-        public ReviewQueryHandler(ContentResolver cr) {
-            super(cr);
-        }
-
         public ReviewQueryHandler(ContentResolver cr, OnLoadMovieListener listener) {
             super(cr);
-            mListener = new WeakReference<OnLoadMovieListener>(listener);
+            mListener = new WeakReference<>(listener);
         }
 
         @Override
@@ -542,17 +509,13 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
         }
     }
 
-    private class TrailerQueryHandler extends AsyncQueryHandler {
+    private static class TrailerQueryHandler extends AsyncQueryHandler {
 
         private WeakReference<OnLoadMovieListener> mListener;
 
-        public TrailerQueryHandler(ContentResolver cr) {
-            super(cr);
-        }
-
         public TrailerQueryHandler(ContentResolver cr, OnLoadMovieListener listener) {
             super(cr);
-            mListener = new WeakReference<OnLoadMovieListener>(listener);
+            mListener = new WeakReference<>(listener);
         }
 
         @Override
@@ -564,24 +527,30 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
         }
     }
 
-    private class MarkFavoriteMovieTask extends AsyncTask<Void, Void, Void> {
+    private static class MarkFavoriteMovieTask extends AsyncTask<Void, Void, Void> {
+        private Context mContext;
         private String mMovieId;
         private int mFavorite;
+        private OnMarkFavoriteMovieListener mListener;
 
-        public MarkFavoriteMovieTask(String movieId, int favorite) {
+        public MarkFavoriteMovieTask(Context context, String movieId, int favorite, OnMarkFavoriteMovieListener listener) {
+            mContext = context;
             mMovieId = movieId;
             mFavorite = favorite;
+            mListener = listener;
         }
 
         @Override
         protected Void doInBackground(Void... params) {
-            MovieUtils.updateFavoriteMovie(getContext(), mMovieId, mFavorite);
+            MovieUtils.updateFavoriteMovie(mContext, mMovieId, mFavorite);
             return null;
         }
 
         @Override
         protected void onPostExecute(Void aVoid) {
-            updateUI(mFavorite);
+            if(mListener != null) {
+                mListener.onMarkFavoriteMovie(mFavorite);
+            }
         }
     }
 }

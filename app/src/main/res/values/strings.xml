@@ -17,4 +17,7 @@
     <string name="favorite">Favorite</string>
     <string name="upcoming">Upcoming</string>
     <string name="now_playing">Now Playing</string>
+    <string name="min_label">min</string>
+    <string name="review_string">Review</string>
+    <string name="trailer_string">Trailer</string>
 </resources>

@@ -29,7 +29,6 @@ public class MainActivity extends AppCompatActivity implements
         MovieListFragment.OnSelectMovieListener,
         MovieDetailsFragment.OnSelectReviewListener,
         SharedPreferences.OnSharedPreferenceChangeListener {
-    private static final String TAG = MainActivity.class.getSimpleName();
     private static final int DETAILS_ACTIVITY = 0;
     private static final String DETAIL_FRAG_TAG = "detail frag tag";
     private static final String LIST_FRAG_TAG = "list frag tag";
@@ -52,7 +51,6 @@ public class MainActivity extends AppCompatActivity implements
             fragment = fm.findFragmentByTag(LIST_FRAG_TAG);
             if(fragment == null) {
                 fragment = MovieListFragment.newInstance(2);
-                FragmentManager.BackStackEntry bse;
                 FragmentTransaction ft = fm.beginTransaction();
                 ft.add(R.id.fragment_holder, fragment, LIST_FRAG_TAG);
                 ft.commit();
@@ -144,7 +142,7 @@ public class MainActivity extends AppCompatActivity implements
             FragmentManager fm = getSupportFragmentManager();
             MovieDetailsFragment fragment = (MovieDetailsFragment) fm.findFragmentByTag(DETAIL_FRAG_TAG);
             if(fragment != null) {
-                //fragment.updateMovie(movie);
+                fragment.updateMovie(movieId);
             }
         } else {
             Intent intent = new Intent(this, MovieDetailsActivity.class);
@@ -174,7 +172,6 @@ public class MainActivity extends AppCompatActivity implements
     public void onUpdateMovieList() {
         FragmentManager fm = getSupportFragmentManager();
         Fragment fragment;
-        FragmentTransaction ft = fm.beginTransaction();
         fragment = fm.findFragmentByTag(LIST_FRAG_TAG);
         if (fragment != null && fragment instanceof MovieListFragment ) {
             ((MovieListFragment)fragment).refreshList();
@@ -222,7 +219,6 @@ public class MainActivity extends AppCompatActivity implements
     private void refreshMovieList(String sortBy) {
         FragmentManager fm = getSupportFragmentManager();
         Fragment fragment;
-        FragmentTransaction ft = fm.beginTransaction();
         fragment = fm.findFragmentByTag(LIST_FRAG_TAG);
         if (fragment != null && fragment instanceof MovieListFragment ) {
             ((MovieListFragment)fragment).refreshList(sortBy);

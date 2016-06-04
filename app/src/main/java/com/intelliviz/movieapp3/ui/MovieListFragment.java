@@ -305,6 +305,7 @@ public class MovieListFragment extends Fragment implements
 
     public void refreshList() {
         mRestartLoader = true;
+        restartLoader(mFilterBy);
     }
 
     public void refreshList(String filter) {

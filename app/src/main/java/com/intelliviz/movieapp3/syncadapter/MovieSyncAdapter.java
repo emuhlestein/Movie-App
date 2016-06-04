@@ -87,7 +87,7 @@ public class MovieSyncAdapter extends AbstractThreadedSyncAdapter {
     }
 
     private void extractMoviesFromJson(String s, String filter) {
-        JSONObject moviesObject = null;
+        JSONObject moviesObject;
         try {
             JSONObject oneMovie;
             moviesObject = new JSONObject(s);
@@ -264,7 +264,7 @@ public class MovieSyncAdapter extends AbstractThreadedSyncAdapter {
     private String loadDataFromUrl(URL url) {
         HttpURLConnection urlConnection = null;
         BufferedReader reader = null;
-        StringBuffer buffer = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
 
         try {
             urlConnection = (HttpURLConnection) url.openConnection();
@@ -281,9 +281,9 @@ public class MovieSyncAdapter extends AbstractThreadedSyncAdapter {
             reader = new BufferedReader(new InputStreamReader(inputStream));
             String line;
             while((line = reader.readLine()) != null) {
-                buffer.append(line+"\n");
+                sb.append(line+"\n");
             }
-            return buffer.toString();
+            return sb.toString();
         } catch (IOException e) {
             Log.e(TAG, "Error accessing internet: " + e.toString());
         } finally {
