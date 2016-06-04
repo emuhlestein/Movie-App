@@ -16,6 +16,7 @@ import android.view.MenuItem;
 import android.view.View;
 
 import com.intelliviz.movieapp3.ApiKeyMgr;
+import com.intelliviz.movieapp3.MovieFilter;
 import com.intelliviz.movieapp3.MovieUtils;
 import com.intelliviz.movieapp3.R;
 import com.intelliviz.movieapp3.Review;
@@ -42,12 +43,6 @@ public class MainActivity extends AppCompatActivity implements
 
         if (!ApiKeyMgr.checkApiKey(this, API_KEY)) {
             fatalError();
-        }
-
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        String sortBy = ApiKeyMgr.DEFAULT_SORT;
-        if(sp != null) {
-            sortBy = sp.getString("sort_by", ApiKeyMgr.DEFAULT_SORT);
         }
 
         FragmentManager fm = getSupportFragmentManager();
@@ -86,6 +81,7 @@ public class MainActivity extends AppCompatActivity implements
             }
             mIsTablet = true;
 
+            SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
             sp.registerOnSharedPreferenceChangeListener(this);
         }
     }
@@ -101,22 +97,16 @@ public class MainActivity extends AppCompatActivity implements
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
 
-        if (id == R.id.action_settings) {
-            SettingsFragment fragment = SettingsFragment.newInstance();
-            FragmentManager fm = getSupportFragmentManager();
-            FragmentTransaction ft = fm.beginTransaction();
-            ft.replace(R.id.fragment_holder, fragment);
-            ft.addToBackStack(null);
-            ft.commit();
-            return true;
-        } else if(id == R.id.action_favorite) {
-            refreshMovieList("favorite");
+        if(id == R.id.action_favorite) {
+            refreshMovieList(MovieFilter.FILTER_FAVORITE);
         } else if(id == R.id.action_top_rated) {
-            refreshMovieList("top_rated");
+            refreshMovieList(MovieFilter.FILTER_TOP_RATED);
         } else if(id == R.id.action_popular) {
-            refreshMovieList("popular");
+            refreshMovieList(MovieFilter.FILTER_MOST_POPULAR);
         } else if(id == R.id.action_upcoming) {
-            refreshMovieList("upcoming");
+            refreshMovieList(MovieFilter.FILTER_UPCOMING);
+        } else if(id == R.id.action_now_playing) {
+            refreshMovieList(MovieFilter.FILTER_NOW_PLAYING);
         } else if(id == R.id.dump_db) {
             MovieUtils.dumpMovies(this);
         }

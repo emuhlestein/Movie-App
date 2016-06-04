@@ -10,6 +10,7 @@ import android.support.v7.preference.PreferenceFragmentCompat;
 import android.support.v7.preference.PreferenceManager;
 import android.view.MenuItem;
 
+import com.intelliviz.movieapp3.MovieFilter;
 import com.intelliviz.movieapp3.R;
 
 /**
@@ -25,7 +26,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements Prefer
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        bindPreferenceSummaryToValue(findPreference(getString(R.string.pref_sort_by_key)));
+        bindPreferenceSummaryToValue(findPreference(MovieFilter.PREF_FILTER_BY));
 
         // causes onCreateOptionMenu to get called
         setHasOptionsMenu(true);

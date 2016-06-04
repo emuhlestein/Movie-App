@@ -6,8 +6,6 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.database.Cursor;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -16,6 +14,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -29,6 +28,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.intelliviz.movieapp3.MovieCursorAdapter;
+import com.intelliviz.movieapp3.MovieFilter;
 import com.intelliviz.movieapp3.MovieState;
 import com.intelliviz.movieapp3.MovieUtils;
 import com.intelliviz.movieapp3.R;
@@ -44,15 +44,14 @@ import butterknife.ButterKnife;
 public class MovieListFragment extends Fragment implements
         SharedPreferences.OnSharedPreferenceChangeListener,
         LoaderManager.LoaderCallbacks<Cursor> {
-    private static final String PREF_SORT_BY = "sort_by";
     private static final String TAG = MovieListFragment.class.getSimpleName();
-    private static final String DEFAULT_SORT_BY_OPTION = "popular";
+    private static final String PREF_NEED_TO_SYNC = "need_to_sync";
     public static final int MOVIE_LOADER = 0;
     public static final int STATUS_LOADER = 1;
     private static final String COLUMN_SPAN_KEY = "column span key";
     private MovieCursorAdapter mMovieCursorAdapter;
     private OnSelectMovieListener mListener;
-    private String mSortBy;
+    private String mFilterBy;
     private int mSpanCount;
     private boolean mRestartLoader;
 
@@ -101,20 +100,27 @@ public class MovieListFragment extends Fragment implements
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getActivity());
         sp.registerOnSharedPreferenceChangeListener(this);
 
-        String sort_key = getResources().getString(R.string.pref_sort_by_key);
-        mSortBy = sp.getString(sort_key, DEFAULT_SORT_BY_OPTION);
+        mFilterBy = sp.getString(MovieFilter.PREF_FILTER_BY, MovieFilter.DEFAULT_FILTER);
+        boolean needToSync = sp.getBoolean(PREF_NEED_TO_SYNC, true);
+        if(needToSync) {
+            checkNeedToSync(mFilterBy);
+            SharedPreferences.Editor editor= sp.edit();
+            editor.putBoolean(PREF_NEED_TO_SYNC, false);
+            editor.apply();
+        }
+
 
         mProgressBar.setVisibility(View.INVISIBLE);
 
         getLoaderManager().initLoader(STATUS_LOADER, null, this);
 
-        ((AppCompatActivity)getActivity()).getSupportActionBar().setSubtitle(getSortedBy(mSortBy));
+        setSubtitle(mFilterBy);
 
         if(mRestartLoader) {
             mRestartLoader = false;
-            restartLoader(mSortBy);
+            restartLoader(mFilterBy);
         } else {
-            initLoader(mSortBy);
+            initLoader(mFilterBy);
         }
 
         return view;
@@ -128,8 +134,7 @@ public class MovieListFragment extends Fragment implements
         setHasOptionsMenu(true);
 
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getActivity());
-        String sort_key = getResources().getString(R.string.pref_sort_by_key);
-        mSortBy = sp.getString(sort_key, DEFAULT_SORT_BY_OPTION);
+        mFilterBy = sp.getString(MovieFilter.PREF_FILTER_BY, MovieFilter.DEFAULT_FILTER);
         mSpanCount = getArguments().getInt(COLUMN_SPAN_KEY);
     }
 
@@ -138,7 +143,7 @@ public class MovieListFragment extends Fragment implements
         int id = item.getItemId();
 
         if (id == R.id.sync) {
-            checkNeedToSync(mSortBy);
+            checkNeedToSync(mFilterBy);
         }
 
         return super.onOptionsItemSelected(item);
@@ -165,7 +170,7 @@ public class MovieListFragment extends Fragment implements
     public void onResume() {
         super.onResume();
         if (mRestartLoader) {
-            restartLoader(mSortBy);
+            restartLoader(mFilterBy);
             mRestartLoader = false;
         }
     }
@@ -193,7 +198,7 @@ public class MovieListFragment extends Fragment implements
      */
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        if(key.equals(PREF_SORT_BY)) {
+        if(key.equals(MovieFilter.PREF_FILTER_BY)) {
             mRestartLoader = true;
         }
     }
@@ -208,28 +213,33 @@ public class MovieListFragment extends Fragment implements
             uri = MovieContract.StateEntry.CONTENT_URI;
             loader = new CursorLoader(getActivity(), uri, null, null, null, null);
         } else {
-            int sortBy = args.getInt(PREF_SORT_BY);
+            int sortBy = args.getInt(MovieFilter.PREF_FILTER_BY);
 
             switch (sortBy) {
                 case MovieContract.TYPE_TOP_RATED:
-                    uri = MovieContract.MovieEntry.buildMovieByListTypeUri("top_rated");
+                    uri = MovieContract.MovieEntry.buildMovieByListTypeUri(MovieFilter.FILTER_TOP_RATED);
                     selection = MovieContract.MovieEntry.TABLE_NAME + "." +
                             MovieContract.MovieEntry.COLUMN_TOP_RATED + " = ?";
                     break;
                 case MovieContract.TYPE_POPULAR:
-                    uri = MovieContract.MovieEntry.buildMovieByListTypeUri("popular");
+                    uri = MovieContract.MovieEntry.buildMovieByListTypeUri(MovieFilter.FILTER_MOST_POPULAR);
                     selection = MovieContract.MovieEntry.TABLE_NAME + "." +
                             MovieContract.MovieEntry.COLUMN_POPULAR + " = ?";
                     break;
                 case MovieContract.TYPE_FAVORITE:
-                    uri = MovieContract.MovieEntry.buildMovieByListTypeUri("favorite");
+                    uri = MovieContract.MovieEntry.buildMovieByListTypeUri(MovieFilter.FILTER_FAVORITE);
                     selection = MovieContract.MovieEntry.TABLE_NAME + "." +
                             MovieContract.MovieEntry.COLUMN_FAVORITE + " = ?";
                     break;
                 case MovieContract.TYPE_UPCOMING:
-                    uri = MovieContract.MovieEntry.buildMovieByListTypeUri("upcoming");
+                    uri = MovieContract.MovieEntry.buildMovieByListTypeUri(MovieFilter.FILTER_UPCOMING);
                     selection = MovieContract.MovieEntry.TABLE_NAME + "." +
                             MovieContract.MovieEntry.COLUMN_UPCOMING + " = ?";
+                    break;
+                case MovieContract.TYPE_NOW_PLAYING:
+                    uri = MovieContract.MovieEntry.buildMovieByListTypeUri(MovieFilter.FILTER_NOW_PLAYING);
+                    selection = MovieContract.MovieEntry.TABLE_NAME + "." +
+                            MovieContract.MovieEntry.COLUMN_NOW_PLAYING + " = ?";
                     break;
                 default:
                     return null;
@@ -297,32 +307,22 @@ public class MovieListFragment extends Fragment implements
         mRestartLoader = true;
     }
 
-    public void refreshList(String sortBy) {
-        mSortBy = sortBy;
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getActivity());
-        sp.edit().putString(PREF_SORT_BY, sortBy);
+    public void refreshList(String filter) {
+        mFilterBy = filter;
+        SharedPreferences.Editor editor =
+                PreferenceManager.getDefaultSharedPreferences(getContext()).edit();
+
+        editor.putString(MovieFilter.PREF_FILTER_BY, filter);
+        editor.apply();
         mRestartLoader = true;
-        restartLoader(mSortBy);
+        restartLoader(mFilterBy);
+        setSubtitle(filter);
     }
 
-    public static boolean isNetworkAvailable(AppCompatActivity activity) {
-        boolean isAvailable = false;
-        if(activity != null) {
-            ConnectivityManager manager =
-                    (ConnectivityManager) activity.getSystemService(Context.CONNECTIVITY_SERVICE);
-            NetworkInfo networkInfo = manager.getActiveNetworkInfo();
-
-            if (networkInfo != null && networkInfo.isConnected()) {
-                isAvailable = true;
-            }
-        }
-        return isAvailable;
-    }
-
-    private String getSortedBy(String value) {
+    private String getFilterString(String value) {
         if(isAdded()) {
-            String[] sortByOptions = getActivity().getResources().getStringArray(R.array.sort_by_options);
-            String[] sortByValues = getActivity().getResources().getStringArray(R.array.sort_by_values);
+            String[] sortByOptions = getActivity().getResources().getStringArray(R.array.filter_by_options);
+            String[] sortByValues = getActivity().getResources().getStringArray(R.array.filter_by_values);
             for (int i = 0; i < sortByValues.length; i++) {
                 if (sortByValues[i].equals(value)) {
                     return sortByOptions[i];
@@ -335,17 +335,23 @@ public class MovieListFragment extends Fragment implements
     private void restartLoader(String sortBy) {
         Bundle bundle = new Bundle();
         switch (sortBy) {
-            case "favorite":
-                bundle.putInt(PREF_SORT_BY, MovieContract.TYPE_FAVORITE);
+            case MovieFilter.FILTER_FAVORITE:
+                bundle.putInt(MovieFilter.PREF_FILTER_BY, MovieContract.TYPE_FAVORITE);
                 break;
-            case "popular":
-                bundle.putInt(PREF_SORT_BY, MovieContract.TYPE_POPULAR);
+            case MovieFilter.FILTER_MOST_POPULAR:
+                bundle.putInt(MovieFilter.PREF_FILTER_BY, MovieContract.TYPE_POPULAR);
                 break;
-            case "upcoming":
-                bundle.putInt(PREF_SORT_BY, MovieContract.TYPE_UPCOMING);
+            case MovieFilter.FILTER_UPCOMING:
+                bundle.putInt(MovieFilter.PREF_FILTER_BY, MovieContract.TYPE_UPCOMING);
+                break;
+            case MovieFilter.FILTER_NOW_PLAYING:
+                bundle.putInt(MovieFilter.PREF_FILTER_BY, MovieContract.TYPE_NOW_PLAYING);
+                break;
+            case MovieFilter.FILTER_TOP_RATED:
+                bundle.putInt(MovieFilter.PREF_FILTER_BY, MovieContract.TYPE_TOP_RATED);
                 break;
             default:
-                bundle.putInt(PREF_SORT_BY, MovieContract.TYPE_TOP_RATED);
+                bundle.putInt(MovieFilter.PREF_FILTER_BY, MovieContract.TYPE_POPULAR);
                 break;
         }
         getLoaderManager().destroyLoader(MOVIE_LOADER);
@@ -355,22 +361,35 @@ public class MovieListFragment extends Fragment implements
     private void initLoader(String sortBy) {
         Bundle bundle = new Bundle();
         switch (sortBy) {
-            case "favorite":
-                bundle.putInt(PREF_SORT_BY, MovieContract.TYPE_FAVORITE);
+            case  MovieFilter.FILTER_FAVORITE:
+                bundle.putInt(MovieFilter.PREF_FILTER_BY, MovieContract.TYPE_FAVORITE);
                 getLoaderManager().initLoader(MOVIE_LOADER, bundle, this);
                 break;
-            case "popular":
-                bundle.putInt(PREF_SORT_BY, MovieContract.TYPE_POPULAR);
+            case MovieFilter.FILTER_MOST_POPULAR:
+                bundle.putInt(MovieFilter.PREF_FILTER_BY, MovieContract.TYPE_POPULAR);
+                getLoaderManager().initLoader(MOVIE_LOADER, bundle, this);
+                break;
+            case MovieFilter.FILTER_TOP_RATED:
+                bundle.putInt(MovieFilter.PREF_FILTER_BY, MovieContract.TYPE_TOP_RATED);
+                getLoaderManager().initLoader(MOVIE_LOADER, bundle, this);
+                break;
+            case MovieFilter.FILTER_UPCOMING:
+                bundle.putInt(MovieFilter.PREF_FILTER_BY, MovieContract.TYPE_UPCOMING);
+                getLoaderManager().initLoader(MOVIE_LOADER, bundle, this);
+                break;
+            case MovieFilter.FILTER_NOW_PLAYING:
+                bundle.putInt(MovieFilter.PREF_FILTER_BY, MovieContract.TYPE_NOW_PLAYING);
                 getLoaderManager().initLoader(MOVIE_LOADER, bundle, this);
                 break;
             default:
-                bundle.putInt(PREF_SORT_BY, MovieContract.TYPE_TOP_RATED);
-                getLoaderManager().initLoader(MOVIE_LOADER, bundle, this);
+                bundle.putInt(MovieFilter.PREF_FILTER_BY, MovieContract.TYPE_TOP_RATED);
+
                 break;
         }
+        getLoaderManager().initLoader(MOVIE_LOADER, bundle, this);
     }
 
-    private void checkNeedToSync(String sortBy) {
+    private void checkNeedToSync(String filter) {
 
         MovieState state = MovieUtils.getMovieState(getContext());
         if(state != null) {
@@ -383,7 +402,7 @@ public class MovieListFragment extends Fragment implements
 
                     Bundle bundle = new Bundle();
                     bundle.putInt(MovieSyncAdapter.EXTRA_PAGE, state.getPage());
-                    bundle.putString(MovieSyncAdapter.EXTRA_SORTBY, sortBy);
+                    bundle.putString(MovieSyncAdapter.EXTRA_FILTER, filter);
                     bundle.putBoolean(ContentResolver.SYNC_EXTRAS_EXPEDITED, true);
                     bundle.putBoolean(ContentResolver.SYNC_EXTRAS_MANUAL, true);
                     ContentResolver.requestSync(account, MovieContract.CONTENT_AUTHORITY, bundle);
@@ -411,6 +430,17 @@ public class MovieListFragment extends Fragment implements
         } else {
             Log.d(TAG, "Account already exists");
             return newAccount;
+        }
+    }
+
+    private void setSubtitle(String subtitle) {
+        if(isAdded() ) {
+            if(getActivity() instanceof AppCompatActivity) {
+                ActionBar actionBar = ((AppCompatActivity) getActivity()).getSupportActionBar();
+                if (actionBar != null) {
+                    actionBar.setSubtitle(getFilterString(subtitle));
+                }
+            }
         }
     }
 }

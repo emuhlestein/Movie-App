@@ -17,7 +17,6 @@ import java.io.InputStreamReader;
  */
 public class ApiKeyMgr {
     public static final String PosterUrl = "http://image.tmdb.org/t/p/w185%s";
-    public static final String DEFAULT_SORT = "popular";
     private static final String TAG = ApiKeyMgr.class.getSimpleName();
     private static final String MOVIEDB_END_POINT = "https://api.themoviedb.org/3/movie/";
     private static final String API_KEY_NOT_SET = "api key not set";

@@ -1,20 +1,20 @@
 <resources>
-    <string name="app_name">Popular Movies</string>
+    <string name="app_name">Movie Browser</string>
     <string name="title_activity_movie_details">Movie Details</string>
-    <string name="pref_sort_by_title">Sort By</string>
-    <string name="pref_sort_by_key" translatable="false">sort_by</string>
+    <string name="pref_filter_by_title">Filter By</string>
     <string name="action_settings">Settings</string>
     <string name="most_popular">Most Popular</string>
     <string name="highest_rated">Highest Rated</string>
-    <string name="favorite">Favorite</string>
     <string name="mark_as_favorite">MARK AS\nFAVORITE</string>
     <string name="unmark_favorite">UNMARK AS\nFAVORITE</string>
     <string name="share">Share</string>
     <string name="no_movie_selected">No Movie Selected</string>
     <string name="empty_list">LIST IS EMPTY</string>
     <string name="movie_exists">"Movie already marked as favorite. It will not be added: "</string>
-    <string name="popular_movies">Popular</string>
-    <string name="top_rated_movies">Top Rated</string>
-    <string name="action_upcoming_movies">Upcoming</string>
-    <string name="favorite_movies">Favorite</string>
+
+    <string name="popular">Popular</string>
+    <string name="top_rated">Top Rated</string>
+    <string name="favorite">Favorite</string>
+    <string name="upcoming">Upcoming</string>
+    <string name="now_playing">Now Playing</string>
 </resources>

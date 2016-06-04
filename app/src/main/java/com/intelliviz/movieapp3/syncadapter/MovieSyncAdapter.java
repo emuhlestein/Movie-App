@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.util.Log;
 
 import com.intelliviz.movieapp3.ApiKeyMgr;
+import com.intelliviz.movieapp3.MovieFilter;
 import com.intelliviz.movieapp3.MovieUtils;
 import com.intelliviz.movieapp3.db.MovieContract;
 
@@ -31,7 +32,7 @@ import java.net.URL;
  */
 public class MovieSyncAdapter extends AbstractThreadedSyncAdapter {
     private final String TAG = MovieSyncAdapter.class.getSimpleName();
-    public static final String EXTRA_SORTBY = "sort by";
+    public static final String EXTRA_FILTER = "filter";
     public static final String EXTRA_PAGE= "page";
     ContentResolver mContentResolver;
 
@@ -53,39 +54,11 @@ public class MovieSyncAdapter extends AbstractThreadedSyncAdapter {
         if(page == -1) {
             page = 1;
         }
-        String urlString = ApiKeyMgr.getMoviesUrl("popular", "" + page);
-        URL url = null;
-        try {
-            url = new URL(urlString);
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        }
-        if(url != null) {
-            downLoadMovies(url, MovieContract.TYPE_POPULAR);
-        }
 
-        urlString = ApiKeyMgr.getMoviesUrl("top_rated", "" + page);
-        url = null;
-        try {
-            url = new URL(urlString);
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        }
-        if(url != null) {
-            downLoadMovies(url, MovieContract.TYPE_TOP_RATED);
-        }
-
-        urlString = ApiKeyMgr.getMoviesUrl("upcoming", "" + page);
-        url = null;
-        try {
-            url = new URL(urlString);
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        }
-        if(url != null) {
-            downLoadMovies(url, MovieContract.TYPE_UPCOMING);
-        }
-
+        downLoadMovies(MovieFilter.FILTER_MOST_POPULAR, page);
+        downLoadMovies(MovieFilter.FILTER_UPCOMING, page);
+        downLoadMovies(MovieFilter.FILTER_TOP_RATED, page);
+        downLoadMovies(MovieFilter.FILTER_NOW_PLAYING, page);
 
         loadRuntimes();
         downloadReviews();
@@ -93,15 +66,27 @@ public class MovieSyncAdapter extends AbstractThreadedSyncAdapter {
         MovieUtils.updateSyncStatus(getContext(), MovieContract.StateEntry.STATUS_UPDATED);
     }
 
-    private void downLoadMovies(URL url, int type) {
-        String jsonData = loadDataFromUrl(url);
-        if(jsonData != null) {
-            extractMoviesFromJson(jsonData, type);
+    private void downLoadMovies(String filter, int page) {
+        String urlString = ApiKeyMgr.getMoviesUrl(filter, "" + page);
+        URL url = null;
+        try {
+            url = new URL(urlString);
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+        if(url != null) {
+            downLoadMovies(url, filter);
         }
     }
 
+    private void downLoadMovies(URL url, String filter) {
+        String jsonData = loadDataFromUrl(url);
+        if(jsonData != null) {
+            extractMoviesFromJson(jsonData, filter);
+        }
+    }
 
-    private void extractMoviesFromJson(String s, int type) {
+    private void extractMoviesFromJson(String s, String filter) {
         JSONObject moviesObject = null;
         try {
             JSONObject oneMovie;
@@ -109,14 +94,14 @@ public class MovieSyncAdapter extends AbstractThreadedSyncAdapter {
             JSONArray movieArray = moviesObject.getJSONArray("results");
             for(int i = 0; i < movieArray.length(); i++) {
                 oneMovie = movieArray.getJSONObject(i);
-                extractMovieFromJson(oneMovie, type);
+                extractMovieFromJson(oneMovie, filter);
             }
         } catch (JSONException e) {
             e.printStackTrace();
         }
     }
 
-    private void extractMovieFromJson(JSONObject object, int type) {
+    private void extractMovieFromJson(JSONObject object, String filter) {
         try {
             String posterPath = object.getString("poster_path");
             String overview = object.getString("overview");
@@ -124,7 +109,7 @@ public class MovieSyncAdapter extends AbstractThreadedSyncAdapter {
             String id = object.getString("id");
             String title = object.getString("title");
             String averageVote = object.getString("vote_average");
-            MovieUtils.addMovieToDatabase(getContext(), id, posterPath, averageVote, releaseDate, overview, title, type);
+            MovieUtils.addMovieToDatabase(getContext(), id, posterPath, averageVote, releaseDate, overview, title, filter);
         } catch (JSONException e) {
             Log.e(TAG, "Error reading movie");
         }

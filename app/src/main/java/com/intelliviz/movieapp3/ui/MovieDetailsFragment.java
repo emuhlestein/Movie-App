@@ -202,17 +202,19 @@ public class MovieDetailsFragment extends Fragment implements OnLoadMovieListene
         outState.putString(SELECTED_MOVIE_KEY, mMovieId);
     }
 
+    /*
     @Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         if(savedInstanceState != null) {
-            mMovieId = savedInstanceState.getParcelable(SELECTED_MOVIE_KEY);
+            //mMovieId = savedInstanceState.getString(SELECTED_MOVIE_KEY);
             //if(mMovie != null) {
             //    mMovieUrl = ApiKeyMgr.getMovieUrl(mMovie.getMovieId());
             //}
             updateUI(0);
         }
     }
+    */
 
     public void updateMovie(String movieId) {
         //mMovie = movie;

@@ -1,17 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string-array name="sort_by_options">
+    <string-array name="filter_by_options">
         <item>@string/most_popular</item>
-        <item>@string/highest_rated</item>
-        <item>@string/favorite</item>
+        <item>@string/top_rated</item>
         <item>@string/upcoming</item>
+        <item>@string/now_playing</item>
+        <item>@string/favorite</item>
     </string-array>
-    <string-array name="sort_by_values">
+    <string-array name="filter_by_values">
         <item>"popular"</item>
         <item>"top_rated"</item>
-        <item>"favorite"</item>
         <item>"upcoming"</item>
+        <item>"now_playing"</item>
+        <item>"favorite"</item>
     </string-array>
 
-    <string name="upcoming">Upcoming</string>
+
 </resources>

@@ -4,6 +4,8 @@ import android.content.ContentResolver;
 import android.net.Uri;
 import android.provider.BaseColumns;
 
+import com.intelliviz.movieapp3.MovieFilter;
+
 /**
  * Created by edm on 4/4/2016.
  */
@@ -22,11 +24,11 @@ public class MovieContract {
     public static final String PATH_TRAILER = "trailer";
     public static final String PATH_STATE = "state";
 
-    public static final int TYPE_FAVORITE = 1;
-    public static final int TYPE_POPULAR = 2;
-    public static final int TYPE_TOP_RATED = 3;
-    public static final int TYPE_UPCOMING = 4;
-    public static final int LOAD_STATUS = 5;
+    public static final int TYPE_FAVORITE = MovieFilter.FAVORITE;
+    public static final int TYPE_POPULAR = MovieFilter.MOST_POPULAR;
+    public static final int TYPE_TOP_RATED = MovieFilter.TOP_RATED;
+    public static final int TYPE_UPCOMING = MovieFilter.UPCOMING;
+    public static final int TYPE_NOW_PLAYING = MovieFilter.NOW_PLAYING;
 
     public static final class MovieEntry implements BaseColumns {
         public static final Uri CONTENT_URI = BASE_CONTENT_URI.buildUpon().appendPath(PATH_MOVIE).build();
@@ -44,10 +46,12 @@ public class MovieContract {
         public static final String COLUMN_RELEASE_DATA = "release_date";
         public static final String COLUMN_AVERAGE_VOTE = "ave_vote";
         public static final String COLUMN_RUNTIME = "runtime";
-        public static final String COLUMN_FAVORITE = "favorite";
-        public static final String COLUMN_TOP_RATED = "top_rated";
-        public static final String COLUMN_UPCOMING = "upcoming";
-        public static final String COLUMN_POPULAR = "popular";
+        public static final String COLUMN_FAVORITE = MovieFilter.FILTER_FAVORITE;
+        public static final String COLUMN_TOP_RATED = MovieFilter.FILTER_TOP_RATED;
+        public static final String COLUMN_UPCOMING = MovieFilter.FILTER_UPCOMING;
+        public static final String COLUMN_POPULAR = MovieFilter.FILTER_MOST_POPULAR;
+        public static final String COLUMN_NOW_PLAYING = MovieFilter.FILTER_NOW_PLAYING;
+
 
         public static Uri buildMovieByListTypeUri(String type) {
             return CONTENT_URI.buildUpon().appendPath(type).build();

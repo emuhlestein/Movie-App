@@ -49,13 +49,13 @@ public class MovieUtils {
         context.getContentResolver().update(uri, values, null, null);
     }
 
-    public static void addMovieToDatabase(Context context, String movieId, String poster, String averageVote, String releaseDate, String synopsis, String title, int type) {
+    public static void addMovieToDatabase(Context context, String movieId, String poster, String averageVote, String releaseDate, String synopsis, String title, String filter) {
         int numRows = 0;
         Cursor cursor = getMovie(context, movieId);
         if(cursor != null && cursor.moveToFirst()) {
             try {
                 int typeIndex = -1;
-                if (type == MovieContract.TYPE_POPULAR) {
+                if (filter.equals(MovieFilter.FILTER_MOST_POPULAR)) {
                     typeIndex = cursor.getColumnIndex(MovieContract.MovieEntry.COLUMN_POPULAR);
                     if (typeIndex != -1) {
                         if (cursor.getInt(typeIndex) == 1) {
@@ -69,7 +69,7 @@ public class MovieUtils {
                             return;
                         }
                     }
-                } else if(type == MovieContract.TYPE_TOP_RATED) {
+            } else if(filter.equals(MovieFilter.FILTER_TOP_RATED)) {
                     typeIndex = cursor.getColumnIndex(MovieContract.MovieEntry.COLUMN_TOP_RATED);
                     if (typeIndex != -1) {
                         if (cursor.getInt(typeIndex) == 1) {
@@ -83,7 +83,7 @@ public class MovieUtils {
                             return;
                         }
                     }
-                } else if(type == MovieContract.TYPE_UPCOMING) {
+                } else if(filter.equals(MovieFilter.FILTER_UPCOMING)) {
                     typeIndex = cursor.getColumnIndex(MovieContract.MovieEntry.COLUMN_UPCOMING);
                     if (typeIndex != -1) {
                         if (cursor.getInt(typeIndex) == 1) {
@@ -91,6 +91,20 @@ public class MovieUtils {
                         } else {
                             ContentValues values = new ContentValues();
                             values.put(MovieContract.MovieEntry.COLUMN_UPCOMING, 1);
+                            Uri uri = MovieContract.MovieEntry.CONTENT_URI;
+                            uri = Uri.withAppendedPath(uri, "" + movieId);
+                            numRows = context.getContentResolver().update(uri, values, null, null);
+                            return;
+                        }
+                    }
+                } else if(filter.equals(MovieFilter.FILTER_NOW_PLAYING)) {
+                    typeIndex = cursor.getColumnIndex(MovieContract.MovieEntry.COLUMN_NOW_PLAYING);
+                    if (typeIndex != -1) {
+                        if (cursor.getInt(typeIndex) == 1) {
+                            return;
+                        } else {
+                            ContentValues values = new ContentValues();
+                            values.put(MovieContract.MovieEntry.COLUMN_NOW_PLAYING, 1);
                             Uri uri = MovieContract.MovieEntry.CONTENT_URI;
                             uri = Uri.withAppendedPath(uri, "" + movieId);
                             numRows = context.getContentResolver().update(uri, values, null, null);
@@ -114,18 +128,26 @@ public class MovieUtils {
             values.put(MovieContract.MovieEntry.COLUMN_SYNOPSIS, synopsis);
             values.put(MovieContract.MovieEntry.COLUMN_TITLE, title);
             values.put(MovieContract.MovieEntry.COLUMN_FAVORITE, 0);
-            if(type == MovieContract.TYPE_POPULAR) {
+            if(filter.equals(MovieFilter.FILTER_MOST_POPULAR)) {
                 values.put(MovieContract.MovieEntry.COLUMN_POPULAR, 1);
                 values.put(MovieContract.MovieEntry.COLUMN_TOP_RATED, 0);
                 values.put(MovieContract.MovieEntry.COLUMN_UPCOMING, 0);
-            } else if(type == MovieContract.TYPE_TOP_RATED) {
+                values.put(MovieContract.MovieEntry.COLUMN_NOW_PLAYING, 0);
+            } else if(filter.equals(MovieFilter.FILTER_TOP_RATED)) {
                 values.put(MovieContract.MovieEntry.COLUMN_POPULAR, 0);
                 values.put(MovieContract.MovieEntry.COLUMN_TOP_RATED, 1);
                 values.put(MovieContract.MovieEntry.COLUMN_UPCOMING, 0);
-            } else if(type == MovieContract.TYPE_UPCOMING) {
+                values.put(MovieContract.MovieEntry.COLUMN_NOW_PLAYING, 0);
+            } else if(filter.equals(MovieFilter.FILTER_UPCOMING)) {
                 values.put(MovieContract.MovieEntry.COLUMN_POPULAR, 0);
                 values.put(MovieContract.MovieEntry.COLUMN_TOP_RATED, 0);
                 values.put(MovieContract.MovieEntry.COLUMN_UPCOMING, 1);
+                values.put(MovieContract.MovieEntry.COLUMN_NOW_PLAYING, 0);
+            }else if(filter.equals(MovieFilter.FILTER_NOW_PLAYING)) {
+                values.put(MovieContract.MovieEntry.COLUMN_POPULAR, 0);
+                values.put(MovieContract.MovieEntry.COLUMN_TOP_RATED, 0);
+                values.put(MovieContract.MovieEntry.COLUMN_UPCOMING, 0);
+                values.put(MovieContract.MovieEntry.COLUMN_NOW_PLAYING, 1);
             }
 
             Uri uri = context.getContentResolver().insert(MovieContract.MovieEntry.CONTENT_URI, values);
@@ -169,6 +191,7 @@ public class MovieUtils {
             int popularIndex = cursor.getColumnIndex(MovieContract.MovieEntry.COLUMN_POPULAR);
             int topRatedIndex = cursor.getColumnIndex(MovieContract.MovieEntry.COLUMN_TOP_RATED);
             int upcomingIndex = cursor.getColumnIndex(MovieContract.MovieEntry.COLUMN_UPCOMING);
+            int nowPlayingIndex = cursor.getColumnIndex(MovieContract.MovieEntry.COLUMN_NOW_PLAYING);
             int runtimeIndex = cursor.getColumnIndex(MovieContract.MovieEntry.COLUMN_RUNTIME);
             String title = "??????";
             String movieId = "??????";
@@ -176,6 +199,7 @@ public class MovieUtils {
             int popular = -1;
             int top_rated = -1;
             int upcoming = -1;
+            int now_playing = -1;
             String runtime = "?????";
             if(movieTitleIndex != -1) {
                 title = cursor.getString(movieTitleIndex);
@@ -195,6 +219,9 @@ public class MovieUtils {
             if(upcomingIndex != -1) {
                 upcoming = cursor.getInt(upcomingIndex);
             }
+            if(nowPlayingIndex != -1) {
+                now_playing = cursor.getInt(nowPlayingIndex);
+            }
             if(runtimeIndex != -1) {
                 runtime = cursor.getString(runtimeIndex);
             }
@@ -211,6 +238,7 @@ public class MovieUtils {
                 MovieContract.MovieEntry.COLUMN_TOP_RATED,
                 MovieContract.MovieEntry.COLUMN_FAVORITE,
                 MovieContract.MovieEntry.COLUMN_UPCOMING,
+                MovieContract.MovieEntry.COLUMN_NOW_PLAYING,
                 MovieContract.MovieEntry.COLUMN_RUNTIME};
         Cursor cursor = context.getContentResolver().query(uri, projection, null, null, null);
 
