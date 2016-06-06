@@ -22,13 +22,4 @@
         android:title="@string/favorite"
         android:orderInCategory="500"
         app:showAsAction="never" />
-    <separator></separator>
-    <item android:id="@+id/sync"
-        android:title="Sync"
-        android:orderInCategory="600"
-        app:showAsAction="never" />
-    <item android:id="@+id/dump_db"
-        android:title="Dump Database"
-        android:orderInCategory="700"
-        app:showAsAction="never" />
 </menu>

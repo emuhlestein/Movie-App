@@ -13,11 +13,9 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 
 import com.intelliviz.movieapp3.ApiKeyMgr;
 import com.intelliviz.movieapp3.MovieFilter;
-import com.intelliviz.movieapp3.MovieUtils;
 import com.intelliviz.movieapp3.R;
 import com.intelliviz.movieapp3.Review;
 import com.intelliviz.movieapp3.Trailer;
@@ -33,7 +31,7 @@ public class MainActivity extends AppCompatActivity implements
     private static final String DETAIL_FRAG_TAG = "detail frag tag";
     private static final String LIST_FRAG_TAG = "list frag tag";
     private boolean mIsTablet;
-    private String API_KEY = null; // Put api key here
+    private static final String API_KEY = null; // Put api key here
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,8 +44,7 @@ public class MainActivity extends AppCompatActivity implements
 
         FragmentManager fm = getSupportFragmentManager();
         Fragment fragment;
-        View detailsView = findViewById(R.id.details_fragment);
-        if (detailsView == null) {
+        if (findViewById(R.id.details_fragment) == null) {
             fragment = fm.findFragmentByTag(LIST_FRAG_TAG);
             if(fragment == null) {
                 fragment = MovieListFragment.newInstance(2);
@@ -105,8 +102,9 @@ public class MainActivity extends AppCompatActivity implements
             refreshMovieList(MovieFilter.FILTER_UPCOMING);
         } else if(id == R.id.action_now_playing) {
             refreshMovieList(MovieFilter.FILTER_NOW_PLAYING);
-        } else if(id == R.id.dump_db) {
-            MovieUtils.dumpMovies(this);
+        } else if(id == android.R.id.home) {
+            FragmentManager fm = getSupportFragmentManager();
+            fm.popBackStack();
         }
 
         return super.onOptionsItemSelected(item);
@@ -116,25 +114,6 @@ public class MainActivity extends AppCompatActivity implements
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
     }
-
-    /*
-    @Override
-    public void onSelectMovie(Movie movie) {
-
-        if (mIsTablet) {
-            MovieDetailsFragment detailsFragment = ((MovieDetailsFragment) getSupportFragmentManager()
-                    .findFragmentByTag(DETAIL_FRAG_TAG));
-            if (detailsFragment != null) {
-                detailsFragment.updateMovie(movie);
-            }
-        } else {
-            Intent intent = new Intent(this, MovieDetailsActivity.class);
-            intent.putExtra(MovieDetailsActivity.MOVIE_EXTRA, movie);
-            intent.putExtra(MovieDetailsActivity.FAVORITE_EXTRA, false);
-            startActivityForResult(intent, DETAILS_ACTIVITY);
-        }
-    }
-    */
 
     @Override
     public void onSelectMovie(String movieId) {

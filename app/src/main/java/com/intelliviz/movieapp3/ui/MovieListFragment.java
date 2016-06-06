@@ -14,13 +14,13 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
@@ -58,6 +58,7 @@ public class MovieListFragment extends Fragment implements
     @Bind(R.id.gridView) RecyclerView mRecyclerView;
     @Bind(R.id.emptyView) TextView mEmptyView;
     @Bind(R.id.progressBar) ProgressBar mProgressBar;
+    @Bind(R.id.movie_swipe_refresh_layout) SwipeRefreshLayout mSwipeRefreshLayout;
 
     public interface OnSelectMovieListener {
 
@@ -109,6 +110,13 @@ public class MovieListFragment extends Fragment implements
             editor.apply();
         }
 
+        mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                checkNeedToSync(mFilterBy);
+            }
+        });
+
 
         mProgressBar.setVisibility(View.INVISIBLE);
 
@@ -136,17 +144,6 @@ public class MovieListFragment extends Fragment implements
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(getActivity());
         mFilterBy = sp.getString(MovieFilter.PREF_FILTER_BY, MovieFilter.DEFAULT_FILTER);
         mSpanCount = getArguments().getInt(COLUMN_SPAN_KEY);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
-
-        if (id == R.id.sync) {
-            checkNeedToSync(mFilterBy);
-        }
-
-        return super.onOptionsItemSelected(item);
     }
 
     @Override
@@ -213,9 +210,9 @@ public class MovieListFragment extends Fragment implements
             uri = MovieContract.StateEntry.CONTENT_URI;
             loader = new CursorLoader(getActivity(), uri, null, null, null, null);
         } else {
-            int sortBy = args.getInt(MovieFilter.PREF_FILTER_BY);
+            int filterBy = args.getInt(MovieFilter.PREF_FILTER_BY);
 
-            switch (sortBy) {
+            switch (filterBy) {
                 case MovieContract.TYPE_TOP_RATED:
                     uri = MovieContract.MovieEntry.buildMovieByListTypeUri(MovieFilter.FILTER_TOP_RATED);
                     selection = MovieContract.MovieEntry.TABLE_NAME + "." +
@@ -278,10 +275,8 @@ public class MovieListFragment extends Fragment implements
                 int statusIndex = cursor.getColumnIndex(MovieContract.StateEntry.COLUMN_STATUS);
                 if(statusIndex != -1) {
                     int status = cursor.getInt(statusIndex);
-                    if(status == MovieContract.StateEntry.STATUS_UPDATING) {
-                        mProgressBar.setVisibility(View.VISIBLE);
-                    } else {
-                        mProgressBar.setVisibility(View.INVISIBLE);
+                    if(status == MovieContract.StateEntry.STATUS_UPDATED) {
+                        mSwipeRefreshLayout.setRefreshing(false);
                     }
                 }
             }

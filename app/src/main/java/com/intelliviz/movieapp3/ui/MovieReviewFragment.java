@@ -2,11 +2,9 @@ package com.intelliviz.movieapp3.ui;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
@@ -63,16 +61,5 @@ public class MovieReviewFragment extends Fragment {
         mReview = getArguments().getParcelable(REVIEW_KEY);
         // causes onCreateOptionMenu to get called
         setHasOptionsMenu(true);
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case android.R.id.home:
-                FragmentManager fm = getFragmentManager();
-                fm.popBackStack();
-                return true;
-        }
-        return super.onOptionsItemSelected(item);
     }
 }

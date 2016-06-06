@@ -1,36 +1,46 @@
-<RelativeLayout  xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/frameView"
+<android.support.v4.widget.SwipeRefreshLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/movie_swipe_refresh_layout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
-    <LinearLayout
+    android:layout_height="wrap_content">
+
+    <RelativeLayout
+        android:id="@+id/frameView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:id="@+id/layoutView"
-        android:orientation="vertical">
-        <android.support.v7.widget.RecyclerView
-            android:id="@+id/gridView"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:id="@+id/layoutView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:horizontalSpacing="0dp"
-            android:verticalSpacing="0dp"
-            android:columnWidth="@dimen/grid_column_width"
-            android:numColumns="auto_fit"
-            android:stretchMode="columnWidth">
-        </android.support.v7.widget.RecyclerView>
-        <TextView
-            android:id="@+id/emptyView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:textSize="22sp"
-            android:gravity="center"
-            android:text="No Results"/>
-    </LinearLayout>
-    <ProgressBar
-        style="?android:attr/progressBarStyleLarge"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_centerVertical="true"
-        android:id="@+id/progressBar"
-        android:progressDrawable="@drawable/progress"/>
-</RelativeLayout>
+            android:orientation="vertical">
+
+            <android.support.v7.widget.RecyclerView
+                android:id="@+id/gridView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:columnWidth="@dimen/grid_column_width"
+                android:horizontalSpacing="0dp"
+                android:numColumns="auto_fit"
+                android:stretchMode="columnWidth"
+                android:verticalSpacing="0dp"/>
+
+            <TextView
+                android:id="@+id/emptyView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:text="No Results"
+                android:textSize="22sp" />
+        </LinearLayout>
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            style="?android:attr/progressBarStyleLarge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_centerVertical="true"
+            android:progressDrawable="@drawable/progress" />
+    </RelativeLayout>
+</android.support.v4.widget.SwipeRefreshLayout>

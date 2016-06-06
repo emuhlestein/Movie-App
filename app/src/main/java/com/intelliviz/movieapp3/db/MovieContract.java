@@ -9,7 +9,7 @@ import com.intelliviz.movieapp3.MovieFilter;
 /**
  * Created by edm on 4/4/2016.
  */
-public class MovieContract {
+public final class MovieContract {
     public static final String CONTENT_AUTHORITY =
             "com.intelliviz.movieapp3.db.MovieProvider";
     public static final Uri BASE_CONTENT_URI = Uri.parse("content://" + CONTENT_AUTHORITY);
@@ -29,6 +29,8 @@ public class MovieContract {
     public static final int TYPE_TOP_RATED = MovieFilter.TOP_RATED;
     public static final int TYPE_UPCOMING = MovieFilter.UPCOMING;
     public static final int TYPE_NOW_PLAYING = MovieFilter.NOW_PLAYING;
+
+    private MovieContract() {}
 
     public static final class MovieEntry implements BaseColumns {
         public static final Uri CONTENT_URI = BASE_CONTENT_URI.buildUpon().appendPath(PATH_MOVIE).build();
